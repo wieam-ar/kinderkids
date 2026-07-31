@@ -1,0 +1,107 @@
+<svg width="750" height="1334" viewBox="0 0 750 1334" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#BEE7F7"/>
+      <stop offset="100%" stop-color="#DFF3FA"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8FCB6B"/>
+      <stop offset="100%" stop-color="#6FB84E"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFE9A8" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFE9A8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="750" height="1334" fill="url(#sky)"/>
+
+  <!-- Sun -->
+  <circle cx="220" cy="180" r="150" fill="url(#sunGlow)"/>
+  <g id="sunRays" fill="#FFC94A">
+    <circle cx="220" cy="180" r="70"/>
+  </g>
+  <g stroke="#FFC94A" stroke-width="10" stroke-linecap="round">
+    <line x1="220" y1="70" x2="220" y2="45"/>
+    <line x1="220" y1="290" x2="220" y2="315"/>
+    <line x1="110" y1="180" x2="85" y2="180"/>
+    <line x1="330" y1="180" x2="355" y2="180"/>
+    <line x1="142" y1="102" x2="124" y2="84"/>
+    <line x1="298" y1="258" x2="316" y2="276"/>
+    <line x1="298" y1="102" x2="316" y2="84"/>
+    <line x1="142" y1="258" x2="124" y2="276"/>
+  </g>
+  <circle cx="220" cy="180" r="72" fill="#FFD25C"/>
+  <circle cx="220" cy="180" r="55" fill="#FFDD82"/>
+
+  <!-- Clouds -->
+  <g fill="#FFFFFF" opacity="0.95">
+    <g transform="translate(60,330)">
+      <ellipse cx="0" cy="20" rx="55" ry="30"/>
+      <ellipse cx="55" cy="5" rx="45" ry="35"/>
+      <ellipse cx="110" cy="25" rx="40" ry="24"/>
+    </g>
+    <g transform="translate(420,260)">
+      <ellipse cx="0" cy="20" rx="40" ry="22"/>
+      <ellipse cx="45" cy="5" rx="38" ry="28"/>
+      <ellipse cx="90" cy="22" rx="32" ry="18"/>
+    </g>
+    <g transform="translate(500,470)">
+      <ellipse cx="0" cy="16" rx="34" ry="18"/>
+      <ellipse cx="38" cy="4" rx="30" ry="22"/>
+      <ellipse cx="72" cy="18" rx="26" ry="15"/>
+    </g>
+  </g>
+
+  <!-- Left tree -->
+  <g transform="translate(30,300)">
+    <path d="M50 550 C48 480 55 420 45 350" stroke="#B98358" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <path d="M45 400 C20 380 5 360 0 330" stroke="#B98358" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <circle cx="55" cy="230" r="95" fill="#7CB955"/>
+    <circle cx="-10" cy="290" r="70" fill="#8ECB63"/>
+    <circle cx="120" cy="300" r="75" fill="#8ECB63"/>
+    <circle cx="55" cy="330" r="80" fill="#9AD473"/>
+  </g>
+
+  <!-- Right tree -->
+  <g transform="translate(560,180)">
+    <path d="M90 620 C95 520 85 430 100 330" stroke="#B98358" stroke-width="18" fill="none" stroke-linecap="round"/>
+    <path d="M100 400 C130 375 150 350 160 315" stroke="#B98358" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <circle cx="95" cy="220" r="105" fill="#7CB955"/>
+    <circle cx="20" cy="290" r="75" fill="#8ECB63"/>
+    <circle cx="170" cy="300" r="80" fill="#8ECB63"/>
+    <circle cx="95" cy="335" r="85" fill="#9AD473"/>
+  </g>
+
+  <!-- Small birds -->
+  <g fill="#F4C24A">
+    <g transform="translate(70,540)">
+      <ellipse cx="0" cy="0" rx="22" ry="17"/>
+      <circle cx="18" cy="-8" r="10"/>
+      <polygon points="26,-8 40,-4 26,0" fill="#E8963C"/>
+      <line x1="0" y1="17" x2="0" y2="30" stroke="#8A5A2B" stroke-width="3"/>
+      <line x1="10" y1="17" x2="10" y2="30" stroke="#8A5A2B" stroke-width="3"/>
+    </g>
+    <g transform="translate(620,420)">
+      <ellipse cx="0" cy="0" rx="20" ry="15"/>
+      <circle cx="16" cy="-7" r="9"/>
+      <polygon points="23,-7 36,-3 23,1" fill="#E8963C"/>
+      <line x1="0" y1="15" x2="0" y2="27" stroke="#8A5A2B" stroke-width="3"/>
+      <line x1="9" y1="15" x2="9" y2="27" stroke="#8A5A2B" stroke-width="3"/>
+    </g>
+  </g>
+
+  <!-- Ground / grass -->
+  <path d="M0 1210 C150 1170 250 1230 375 1200 C500 1170 600 1230 750 1195 L750 1334 L0 1334 Z" fill="url(#grass)"/>
+  <g stroke="#5EA23C" stroke-width="7" stroke-linecap="round" opacity="0.8">
+    <line x1="60" y1="1250" x2="50" y2="1200"/>
+    <line x1="80" y1="1255" x2="90" y2="1200"/>
+    <line x1="660" y1="1255" x2="650" y2="1205"/>
+    <line x1="690" y1="1260" x2="700" y2="1210"/>
+    <line x1="370" y1="1270" x2="370" y2="1225"/>
+  </g>
+
+  <!-- Soft vignette to keep center readable for logo overlay -->
+  <ellipse cx="375" cy="640" rx="330" ry="300" fill="#FFFFFF" opacity="0.18"/>
+</svg>
