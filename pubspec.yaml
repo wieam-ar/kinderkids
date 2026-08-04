@@ -26,10 +26,9 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/coloring/
+    - assets/data/
     - assets/loties/
     - assets/audios/
-    - assets/vedios/alphabet.mp4
-    - assets/vedios/animal.mp4
-    - assets/vedios/matth.mp4
-    - assets/vedios/numbers.mp4
-    - assets/vedios/vegetables.mp4
+    - assets/vedios/
+    - assets/data/numbers.json

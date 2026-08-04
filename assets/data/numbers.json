@@ -1,0 +1,26 @@
+{
+"arabic": [
+{ "symbol": "٠", "word": "صفر", "value": 0 },
+{ "symbol": "١", "word": "واحد", "value": 1 },
+{ "symbol": "٢", "word": "اثنان", "value": 2 },
+{ "symbol": "٣", "word": "ثلاثة", "value": 3 },
+{ "symbol": "٤", "word": "أربعة", "value": 4 },
+{ "symbol": "٥", "word": "خمسة", "value": 5 },
+{ "symbol": "٦", "word": "ستة", "value": 6 },
+{ "symbol": "٧", "word": "سبعة", "value": 7 },
+{ "symbol": "٨", "word": "ثمانية", "value": 8 },
+{ "symbol": "٩", "word": "تسعة", "value": 9 }
+],
+"english": [
+{ "symbol": "0", "word": "Zero", "value": 0 },
+{ "symbol": "1", "word": "One", "value": 1 },
+{ "symbol": "2", "word": "Two", "value": 2 },
+{ "symbol": "3", "word": "Three", "value": 3 },
+{ "symbol": "4", "word": "Four", "value": 4 },
+{ "symbol": "5", "word": "Five", "value": 5 },
+{ "symbol": "6", "word": "Six", "value": 6 },
+{ "symbol": "7", "word": "Seven", "value": 7 },
+{ "symbol": "8", "word": "Eight", "value": 8 },
+{ "symbol": "9", "word": "Nine", "value": 9 }
+]
+}

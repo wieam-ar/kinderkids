@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../alphabet/alphabetScreen.dart';
+import '../draw/Paintscreen.dart';
+import '../draw/drawscreen.dart';
+import '../math/mathexercice.dart';
 import '../music/musicScreen.dart';
+import '../numbers/numberscreen.dart';
+import '../puzzle/PuzzleScreen.dart';
 import '../stories/StoryReadingScreen.dart';
 import '../vedio/vedioScreen.dart';
 import 'Activity_detail.dart';
@@ -90,7 +96,7 @@ class HomeScreen extends StatelessWidget {
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const MusicScreen()),
                           ),
-                          ),
+                        ),
 
                       ),
                       const SizedBox(width: 12),
@@ -123,70 +129,41 @@ class HomeScreen extends StatelessWidget {
                         icon: Icons.palette_rounded,
                         label: 'Paint',
                         colors: const [Color(0xFFFF9D6C), Color(0xFFF25C54)],
-                        onTap: () => _open(
-                          context,
-                          const ActivityDetailScreen(
-                            title: 'Paint',
-                            icon: Icons.palette_rounded,
-                            colors: [Color(0xFFFF9D6C), Color(0xFFF25C54)],
-                            subtitle: 'Pick colors and paint your own picture!',
-                          ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PaintScreen()),
                         ),
+
                       ),
                       _ExerciseTile(
                         icon: Icons.edit_rounded,
                         label: 'Draw',
                         colors: const [Color(0xFF6FD3F7), Color(0xFF3AAAE0)],
-                        onTap: () => _open(
-                          context,
-                          const ActivityDetailScreen(
-                            title: 'Draw',
-                            icon: Icons.edit_rounded,
-                            colors: [Color(0xFF6FD3F7), Color(0xFF3AAAE0)],
-                            subtitle: 'Practice drawing shapes and doodles!',
-                          ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const DrawScreen()),
                         ),
                       ),
                       _ExerciseTile(
                         icon: Icons.calculate_rounded,
                         label: 'Math',
                         colors: const [Color(0xFFB48CF2), Color(0xFF8B5CF6)],
-                        onTap: () => _open(
-                          context,
-                          const ActivityDetailScreen(
-                            title: 'Math',
-                            icon: Icons.calculate_rounded,
-                            colors: [Color(0xFFB48CF2), Color(0xFF8B5CF6)],
-                            subtitle: 'Solve fun counting and math puzzles!',
-                          ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const MathExerciseScreen()),
                         ),
                       ),
                       _ExerciseTile(
                         icon: Icons.extension_rounded,
                         label: 'Puzzle',
                         colors: const [Color(0xFF6EE7B7), Color(0xFF2FBF8F)],
-                        onTap: () => _open(
-                          context,
-                          const ActivityDetailScreen(
-                            title: 'Puzzle',
-                            icon: Icons.extension_rounded,
-                            colors: [Color(0xFF6EE7B7), Color(0xFF2FBF8F)],
-                            subtitle: 'Piece together colorful puzzles!',
-                          ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const PuzzleScreen()),
                         ),
                       ),
                       _ExerciseTile(
                         icon: Icons.abc_rounded,
                         label: 'Alphabet',
                         colors: const [Color(0xFFFFC15E), Color(0xFFF2994A)],
-                        onTap: () => _open(
-                          context,
-                          const ActivityDetailScreen(
-                            title: 'Alphabet',
-                            icon: Icons.abc_rounded,
-                            colors: [Color(0xFFFFC15E), Color(0xFFF2994A)],
-                            subtitle: 'Learn letters from A to Z!',
-                          ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const AlphabetScreen()),
                         ),
                       ),
                       _ExerciseTile(
@@ -196,20 +173,12 @@ class HomeScreen extends StatelessWidget {
                           Color(0xFF7CC5FF),
                           HomeScreen.primaryBlueDark
                         ],
-                        onTap: () => _open(
-                          context,
-                          const ActivityDetailScreen(
-                            title: 'Numbers',
-                            icon: Icons.numbers_rounded,
-                            colors: [
-                              Color(0xFF7CC5FF),
-                              HomeScreen.primaryBlueDark
-                            ],
-                            subtitle: 'Count and learn numbers step by step!',
-                          ),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const NumberScreen()),
                         ),
                       ),
                     ],
+
                   ),
                 ],
               ),
