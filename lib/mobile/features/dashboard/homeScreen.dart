@@ -282,14 +282,7 @@ class _SectionTitle extends StatelessWidget {
             color: HomeScreen.textDark,
           ),
         ),
-        Text(
-          'See all',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: HomeScreen.primaryBlue,
-          ),
-        ),
+
       ],
     );
   }

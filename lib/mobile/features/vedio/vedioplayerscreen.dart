@@ -22,7 +22,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void initState() {
     super.initState();
     _controller = VideoPlayerController.asset(
-      'assets/videos/${widget.video.file}',
+      'assets/vedios/${widget.video.file}',
     )..initialize().then((_) {
       if (!mounted) return;
       setState(() => _initialized = true);
