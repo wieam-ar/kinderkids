@@ -1,32 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// ---------------------------------------------------------------------
-/// Math mini-game screen — "Safari Math Trail"
-/// ---------------------------------------------------------------------
-/// Design concept (see design tokens below): the app already uses a
-/// safari/savanna world (lion avatar, giraffe/hippo mascots, jungle
-/// background). Instead of a generic sky-blue quiz, this screen leans
-/// into that world: a warm sand-and-savanna palette, a "stepping-stone
-/// trail" as the progress indicator (each stone = one question, filled
-/// in as the child answers), color-coded skill badges per question type,
-/// and a lion companion that reacts to right/wrong answers with short
-/// Darija/Arabic encouragement.
-///
-/// Six question types rotate randomly so the exercise stays varied,
-/// while every question still uses only small numbers (1-10) and simple
-/// operations — appropriate for kids aged 3 to 9:
-///   1. Addition            3 + 4 = ?
-///   2. Subtraction         8 - 3 = ?
-///   3. Missing number      3 + ? = 7
-///   4. Counting             🍌🍌🍌 → how many?
-///   5. Small multiplication 2 × 3 = ?  (factors 2-5 only)
-///   6. Number order          the number right after / before 5
-///
-/// Usage: replace the generic ActivityDetailScreen for the "Math" card:
-///   onTap: () => Navigator.of(context).push(
-///     MaterialPageRoute(builder: (_) => const MathExerciseScreen()),
-///   ),
+
 class MathExerciseScreen extends StatefulWidget {
   final int totalQuestions;
   const MathExerciseScreen({super.key, this.totalQuestions = 8});
@@ -35,11 +10,9 @@ class MathExerciseScreen extends StatefulWidget {
   State<MathExerciseScreen> createState() => _MathExerciseScreenState();
 }
 
-// --- Design tokens ------------------------------------------------------
-// Savanna palette: warm sand base, deep jungle text, and a distinct
-// accent color per question "skill" so the trail of badges also tells
-// the child (and a watching parent) what kind of question is coming.
 class _Palette {
+  static const String backgroundAsset = 'assets/images/splash_background.png';
+
   static const Color sand = Color(0xFFFBF1DC);
   static const Color sandDeep = Color(0xFFF3E1B8);
   static const Color jungleDeep = Color(0xFF1F5D4C);
@@ -81,8 +54,8 @@ class _Question {
 
 class _MathExerciseScreenState extends State<MathExerciseScreen> {
   final Random _rng = Random();
-  final List<String> _rightPhrases = ['زوينة! 🌟', 'برافو عليك!', 'قوي بزاف!', 'خطيرة!'];
-  final List<String> _wrongPhrases = ['قريب! حاول عاود', 'يالله، مرة أخرى', 'ماشي هي، عاود الكرة'];
+  final List<String> _rightPhrases = ['Great job! 🌟', 'Well done!', 'Super smart!', 'Awesome!'];
+  final List<String> _wrongPhrases = ['So close! Try again', "Let's try once more", 'Not quite, try again'];
   final List<String> _emojiPool = ['🍌', '🍎', '🍊', '🐘', '🦋', '🐢', '⭐'];
 
   // NOTE: these were previously declared `late` and only assigned inside
@@ -99,7 +72,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   bool _locked = false;
   bool _finished = false;
   int get _score => _trail.where((r) => r == true).length;
-  String _mascotPhrase = 'يالله نلعبو!';
+  String _mascotPhrase = "Let's play!";
 
   @override
   void initState() {
@@ -165,11 +138,11 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final answer = a + b;
     return _Question(
       type: _QType.addition,
-      promptBuilder: (_) => _equationText('$a + $b = ؟'),
+      promptBuilder: (_) => _equationText('$a + $b = ?'),
       answer: answer,
       options: _distractors(answer),
       accent: _Palette.addition,
-      badgeLabel: 'جمع',
+      badgeLabel: 'Addition',
       badgeIcon: Icons.add_rounded,
     );
   }
@@ -180,11 +153,11 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final answer = a - b;
     return _Question(
       type: _QType.subtraction,
-      promptBuilder: (_) => _equationText('$a - $b = ؟'),
+      promptBuilder: (_) => _equationText('$a - $b = ?'),
       answer: answer,
       options: _distractors(answer),
       accent: _Palette.subtraction,
-      badgeLabel: 'طرح',
+      badgeLabel: 'Subtraction',
       badgeIcon: Icons.remove_rounded,
     );
   }
@@ -195,11 +168,11 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final c = a + missing;
     return _Question(
       type: _QType.missing,
-      promptBuilder: (_) => _equationText('$a + ؟ = $c'),
+      promptBuilder: (_) => _equationText('$a + ? = $c'),
       answer: missing,
       options: _distractors(missing, min: 0),
       accent: _Palette.missing,
-      badgeLabel: 'الرقم الناقص',
+      badgeLabel: 'Missing Number',
       badgeIcon: Icons.help_outline_rounded,
     );
   }
@@ -221,7 +194,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
       answer: count,
       options: _distractors(count, min: 1),
       accent: _Palette.counting,
-      badgeLabel: 'عد',
+      badgeLabel: 'Counting',
       badgeIcon: Icons.pin_rounded,
     );
   }
@@ -232,11 +205,11 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final answer = a * b;
     return _Question(
       type: _QType.multiply,
-      promptBuilder: (_) => _equationText('$a × $b = ؟'),
+      promptBuilder: (_) => _equationText('$a × $b = ?'),
       answer: answer,
       options: _distractors(answer),
       accent: _Palette.multiply,
-      badgeLabel: 'ضرب',
+      badgeLabel: 'Multiplication',
       badgeIcon: Icons.close_rounded,
     );
   }
@@ -245,11 +218,11 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final n = _rng.nextInt(9) + 1; // 1..9
     final after = _rng.nextBool();
     final answer = after ? n + 1 : n - 1;
-    final prompt = after ? 'الرقم لي كيجي من بعد $n' : 'الرقم لي كيجي قبل $n';
+    final prompt = after ? 'What number comes after $n' : 'What number comes before $n';
     return _Question(
       type: _QType.order,
       promptBuilder: (_) => Text(
-        '$prompt ؟',
+        '$prompt?',
         textAlign: TextAlign.center,
         style: const TextStyle(
           fontSize: 24,
@@ -260,7 +233,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
       answer: answer,
       options: _distractors(answer, min: 0),
       accent: _Palette.order,
-      badgeLabel: 'ترتيب الأرقام',
+      badgeLabel: 'Number Order',
       badgeIcon: Icons.swap_horiz_rounded,
     );
   }
@@ -301,7 +274,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
       _selected = null;
       _locked = false;
       _finished = false;
-      _mascotPhrase = 'يالله نلعبو!';
+      _mascotPhrase = "Let's play!";
       _question = _buildQuestion();
     });
   }
@@ -321,28 +294,36 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final question = _question!;
 
     return Scaffold(
+      // Fallback color shows for an instant before the image decodes,
+      // and along any edge the image doesn't quite cover.
       backgroundColor: _Palette.sand,
       body: Stack(
         children: [
+          // 1) Full-bleed illustrated savanna scene.
           Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
+            child: Image.asset(
+              _Palette.backgroundAsset,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+          // 2) Soft "sky haze" wash so the busier art doesn't fight with
+          // text, cards, and the stepping-stone trail sitting on top.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [_Palette.sand, _Palette.sandDeep],
+                  colors: [
+                    Colors.white.withOpacity(0.55),
+                    Colors.white.withOpacity(0.30),
+                    _Palette.sand.withOpacity(0.55),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
                 ),
               ),
             ),
-          ),
-          // Faint dune silhouette along the bottom, echoing the app's
-          // savanna world without needing extra image assets.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: 120,
-            child: CustomPaint(painter: _DunePainter()),
           ),
 
           SafeArea(
@@ -422,7 +403,9 @@ class _StoneTrail extends StatelessWidget {
             fill = _Palette.wrong;
             child = const Icon(Icons.close_rounded, size: 14, color: Colors.white);
           } else {
-            fill = Colors.white;
+            // Slightly opaque (rather than pure white) so pending stones
+            // stay visible against the busier photographic-style backdrop.
+            fill = Colors.white.withOpacity(0.85);
           }
           return Expanded(
             child: Padding(
@@ -436,15 +419,13 @@ class _StoneTrail extends StatelessWidget {
                   border: result == null
                       ? Border.all(color: _Palette.jungleDeep.withOpacity(0.25), width: 1.4)
                       : null,
-                  boxShadow: isCurrent
-                      ? [
+                  boxShadow: [
                     BoxShadow(
-                      color: _Palette.jungleDeep.withOpacity(0.25),
-                      blurRadius: 6,
+                      color: Colors.black.withOpacity(isCurrent ? 0.18 : 0.08),
+                      blurRadius: isCurrent ? 6 : 3,
                       offset: const Offset(0, 2),
                     ),
-                  ]
-                      : null,
+                  ],
                 ),
                 alignment: Alignment.center,
                 child: child == null
@@ -471,8 +452,18 @@ class _SkillBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.14),
+        // Bumped from a flat tint to solid white + a colored tint layer
+        // so the badge stays crisp over the illustrated background.
+        color: Colors.white.withOpacity(0.92),
         borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: color.withOpacity(0.35), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -521,7 +512,7 @@ class _QuestionCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -545,12 +536,12 @@ class _QuestionCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withOpacity(0.97),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(color: question.accent.withOpacity(0.35), width: 1.6),
             boxShadow: [
               BoxShadow(
-                color: question.accent.withOpacity(0.15),
+                color: Colors.black.withOpacity(0.12),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -667,45 +658,59 @@ class _ResultView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool great = score >= (total * 0.7);
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(great ? '🏆' : '🦁', style: const TextStyle(fontSize: 60)),
-          const SizedBox(height: 14),
-          Text(
-            great ? 'زوين بزاف!' : 'مجهود مزيان!',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: _Palette.textDark,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.94),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'جاوبتي صحيح على $score من $total',
-            style: TextStyle(fontSize: 14, color: _Palette.textMuted, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 26),
-          ElevatedButton(
-            onPressed: onRestart,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _Palette.jungleDeep,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
-              shape: const StadiumBorder(),
-              elevation: 0,
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(great ? '🏆' : '🦁', style: const TextStyle(fontSize: 60)),
+            const SizedBox(height: 14),
+            Text(
+              great ? 'Awesome job!' : 'Nice effort!',
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: _Palette.textDark,
+              ),
             ),
-            child: const Text('عاود اللعب', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: onExit,
-            child: Text(
-              'رجوع للأنشطة',
-              style: TextStyle(color: _Palette.textMuted, fontWeight: FontWeight.w700),
+            const SizedBox(height: 6),
+            Text(
+              'You got $score out of $total right',
+              style: TextStyle(fontSize: 14, color: _Palette.textMuted, fontWeight: FontWeight.w600),
             ),
-          ),
-        ],
+            const SizedBox(height: 26),
+            ElevatedButton(
+              onPressed: onRestart,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _Palette.jungleDeep,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
+                shape: const StadiumBorder(),
+                elevation: 0,
+              ),
+              child: const Text('Play Again', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: onExit,
+              child: Text(
+                'Back to Activities',
+                style: TextStyle(color: _Palette.textMuted, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -729,24 +734,4 @@ class _RoundIconButton extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Soft dune silhouette painted along the bottom edge — a light nod to
-/// the app's savanna backdrop without requiring an extra image asset.
-class _DunePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = _Palette.jungleDeep.withOpacity(0.08);
-    final path = Path()
-      ..moveTo(0, size.height * 0.55)
-      ..quadraticBezierTo(size.width * 0.22, size.height * 0.2, size.width * 0.48, size.height * 0.5)
-      ..quadraticBezierTo(size.width * 0.75, size.height * 0.8, size.width, size.height * 0.35)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
