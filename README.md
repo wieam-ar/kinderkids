@@ -33,7 +33,6 @@ Everything is designed to be **simple, safe, and 100% kid-friendly** 💖
 
 - Learn **letters (A–Z / أ–ي / FR)**
 - 🔊 Clear pronunciation sounds
-- 🖼️ Cute images (A → 🍎 Apple, ب → 🦆 بطة)
 
 ---
 
@@ -41,31 +40,21 @@ Everything is designed to be **simple, safe, and 100% kid-friendly** 💖
 
 - Learn numbers step by step 🔟
 - Count with fun objects 🍭🍎⚽
-- 🎉 Happy sounds when answers are correct
 
 ---
 
 ### 🎮 Mini Learning Games
 
-- 🧩 Match letters with images
-- 🎯 Simple quizzes
-- 🧠 Memory & recognition games
+- 🎯 Simple quizzes puzzle
 
 ---
 
-### 🔊 Sounds & Interaction
-
-- 🎙️ Friendly voice guidance
-- 👏 Reward sounds for encouragement
-- 🔁 Repetition to help kids remember
-
----
 
 ### 🎨 Kid-Friendly Design
 
 - 🟡 Big buttons & icons
 - 🌈 Soft & colorful UI
-- 👆 Easy navigation (even for toddlers!)
+- 👆 Easy navigation 
 
 ---
 
@@ -99,15 +88,15 @@ KinderKids is built using **modern Android development practices** 💻✨
 
 ### 🏠 Home & Learning Sections
 
-| Home Screen | Categories |
-|------------|-----------|
+|  |  |
+|-------|-----------|
 | ![](screens/1.png) | ![](screens/2.png) |
 
 ---
 
 ### 🎮 Fun Activities
 
-| Alphabet Game | Numbers Game |
+| |  |
 |--------------|-------------|
 | ![](screens/3.png) | ![](screens/4.png) |
 
