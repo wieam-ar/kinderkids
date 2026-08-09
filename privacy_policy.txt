@@ -1,0 +1,58 @@
+POLITIQUE DE CONFIDENTIALITÉ - KinderKids
+
+
+1. INTRODUCTION
+Bienvenue dans KinderKids. La protection de la vie privée de nos utilisateurs, en particulier des enfants, est notre priorité absolue. Cette politique de confidentialité explique comment nous traitons les données.
+
+2. COLLECTE DES DONNÉES
+L'application KinderKids est conçue pour être utilisée en toute sécurité par les enfants et leurs familles.
+- Nous ne collectons AUCUNE donnée personnelle identifiable (nom, adresse, adresse e-mail, numéro de téléphone, etc.).
+- Nous ne collectons pas d'identifiants publicitaires ou d'identifiants d'appareil à des fins de suivi.
+- Accès local : Si l'application demande l'accès à la galerie ou à l'appareil photo, c'est uniquement pour les fonctionnalités créatives (dessin, puzzle personnalisé). Ces fichiers restent stockés localement sur votre appareil et ne sont jamais transmis à nos serveurs.
+
+3. UTILISATION DES DONNÉES
+Puisque nous ne collectons aucune donnée personnelle, nous n'utilisons, ne vendons ni ne partageons aucune information avec des tiers.
+
+4. PUBLICITÉ ET SDK TIERS
+- KinderKids ne contient aucune publicité tierce.
+- Nous n'utilisons pas de services d'analyse (Analytics) tiers qui collectent des données utilisateur dans cette application.
+
+5. PROTECTION DES ENFANTS (COPPA)
+Nous nous conformons strictement au Règlement sur les données utilisateur de Google Play et à la loi COPPA (Children's Online Privacy Protection Act). Nous ne collectons sciemment aucune information auprès d'enfants de moins de 13 ans.
+
+6. SÉCURITÉ
+Bien que nous ne collections pas de données sur nos serveurs, nous encourageons les parents à surveiller l'utilisation de l'appareil par leurs enfants.
+
+7. CONTACT
+Pour toute question concernant cette politique de confidentialité, vous pouvez nous contacter à l'adresse suivante : support@kinderkids.com
+
+-----------------------------------------------------------
+
+PRIVACY POLICY - KinderKids
+
+Last updated: May 24, 2024
+
+1. INTRODUCTION
+Welcome to KinderKids. Protecting the privacy of our users, especially children, is our top priority. This privacy policy explains how we handle data.
+
+2. DATA COLLECTION
+The KinderKids app is designed to be safely used by children and their families.
+- We do NOT collect any personally identifiable information (name, address, email address, phone number, etc.).
+- We do not collect advertising IDs or device identifiers for tracking purposes.
+- Local Access: If the app requests access to the gallery or camera, it is solely for creative features (drawing, personalized puzzles). These files remain stored locally on your device and are never transmitted to our servers.
+
+3. USE OF DATA
+Since we do not collect any personal data, we do not use, sell, or share any information with third parties.
+
+4. ADVERTISING AND THIRD-PARTY SDKs
+- KinderKids does not contain any third-party advertising.
+- We do not use third-party analytics services that collect user data in this application.
+
+5. CHILDREN'S PRIVACY (COPPA)
+We strictly comply with Google Play's User Data Policy and COPPA (Children's Online Privacy Protection Act). We do not knowingly collect any information from children under the age of 13.
+
+6. SECURITY
+While we do not collect data on our servers, we encourage parents to supervise their children's device usage.
+
+7. CONTACT
+If you have any questions about this privacy policy, you can contact us at: support@kinderkids.com
