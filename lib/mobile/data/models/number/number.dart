@@ -1,7 +1,7 @@
 class NumberItem {
   final String symbol; // "1" or "١"
-  final String word;   // "One" or "واحد"
-  final int value;      // 1
+  final String word; // "One" or "واحد"
+  final int value; // 1
 
   NumberItem({
     required this.symbol,
@@ -10,16 +10,16 @@ class NumberItem {
   });
 
   factory NumberItem.fromJson(Map<String, dynamic> json) => NumberItem(
-    symbol: json['symbol'] as String,
-    word: json['word'] as String,
-    value: json['value'] as int,
-  );
+        symbol: json['symbol'] as String,
+        word: json['word'] as String,
+        value: json['value'] as int,
+      );
 
   Map<String, dynamic> toJson() => {
-    'symbol': symbol,
-    'word': word,
-    'value': value,
-  };
+        'symbol': symbol,
+        'word': word,
+        'value': value,
+      };
 }
 
 class NumberData {
@@ -29,11 +29,11 @@ class NumberData {
   NumberData({required this.arabic, required this.english});
 
   factory NumberData.fromJson(Map<String, dynamic> json) => NumberData(
-    arabic: (json['arabic'] as List)
-        .map((e) => NumberItem.fromJson(e as Map<String, dynamic>))
-        .toList(),
-    english: (json['english'] as List)
-        .map((e) => NumberItem.fromJson(e as Map<String, dynamic>))
-        .toList(),
-  );
+        arabic: (json['arabic'] as List)
+            .map((e) => NumberItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        english: (json['english'] as List)
+            .map((e) => NumberItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 }

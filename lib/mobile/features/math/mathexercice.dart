@@ -1,6 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../data/providers/progress_provider.dart';
 
 class MathExerciseScreen extends StatefulWidget {
   final int totalQuestions;
@@ -14,7 +16,6 @@ class _Palette {
   static const String backgroundAsset = 'assets/images/splash_background.png';
 
   static const Color sand = Color(0xFFFBF1DC);
-  static const Color sandDeep = Color(0xFFF3E1B8);
   static const Color jungleDeep = Color(0xFF1F5D4C);
   static const Color textDark = Color(0xFF213238);
   static const Color textMuted = Color(0xFF7C8C93);
@@ -54,8 +55,17 @@ class _Question {
 
 class _MathExerciseScreenState extends State<MathExerciseScreen> {
   final Random _rng = Random();
-  final List<String> _rightPhrases = ['Great job! 🌟', 'Well done!', 'Super smart!', 'Awesome!'];
-  final List<String> _wrongPhrases = ['So close! Try again', "Let's try once more", 'Not quite, try again'];
+  final List<String> _rightPhrases = [
+    'Great job! 🌟',
+    'Well done!',
+    'Super smart!',
+    'Awesome!'
+  ];
+  final List<String> _wrongPhrases = [
+    'So close! Try again',
+    "Let's try once more",
+    'Not quite, try again'
+  ];
   final List<String> _emojiPool = ['🍌', '🍎', '🍊', '🐘', '🦋', '🐢', '⭐'];
 
   // NOTE: these were previously declared `late` and only assigned inside
@@ -123,14 +133,14 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   Widget _equationText(String text, {Color? color}) => Text(
-    text,
-    style: TextStyle(
-      fontSize: 32,
-      fontWeight: FontWeight.w900,
-      letterSpacing: 0.5,
-      color: color ?? _Palette.textDark,
-    ),
-  );
+        text,
+        style: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+          color: color ?? _Palette.textDark,
+        ),
+      );
 
   _Question _addition() {
     final a = _rng.nextInt(9) + 1;
@@ -188,7 +198,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
         runSpacing: 6,
         children: List.generate(
           count,
-              (i) => Text(emoji, style: const TextStyle(fontSize: 28)),
+          (i) => Text(emoji, style: const TextStyle(fontSize: 28)),
         ),
       ),
       answer: count,
@@ -218,7 +228,8 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     final n = _rng.nextInt(9) + 1; // 1..9
     final after = _rng.nextBool();
     final answer = after ? n + 1 : n - 1;
-    final prompt = after ? 'What number comes after $n' : 'What number comes before $n';
+    final prompt =
+        after ? 'What number comes after $n' : 'What number comes before $n';
     return _Question(
       type: _QType.order,
       promptBuilder: (_) => Text(
@@ -251,6 +262,14 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
           ? _rightPhrases[_rng.nextInt(_rightPhrases.length)]
           : _wrongPhrases[_rng.nextInt(_wrongPhrases.length)];
     });
+
+    if (isCorrect) {
+      // Feed the learning-progress system: one star + one challenge step
+      // for every correct math answer.
+      final progress = Provider.of<ProgressProvider>(context, listen: false);
+      progress.addStars(1);
+      progress.incrementChallengeProgress('math');
+    }
 
     Future.delayed(const Duration(milliseconds: 750), () {
       if (!mounted) return;
@@ -348,22 +367,23 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _StoneTrail(trail: _trail, current: _index, finished: _finished),
+                  _StoneTrail(
+                      trail: _trail, current: _index, finished: _finished),
                   Expanded(
                     child: _finished
                         ? _ResultView(
-                      score: _score,
-                      total: widget.totalQuestions,
-                      onRestart: _restart,
-                      onExit: () => Navigator.of(context).pop(),
-                    )
+                            score: _score,
+                            total: widget.totalQuestions,
+                            onRestart: _restart,
+                            onExit: () => Navigator.of(context).pop(),
+                          )
                         : _QuestionCard(
-                      question: question,
-                      selected: _selected,
-                      locked: _locked,
-                      onTap: _onOptionTap,
-                      mascotPhrase: _mascotPhrase,
-                    ),
+                            question: question,
+                            selected: _selected,
+                            locked: _locked,
+                            onTap: _onOptionTap,
+                            mascotPhrase: _mascotPhrase,
+                          ),
                   ),
                 ],
               ),
@@ -384,7 +404,8 @@ class _StoneTrail extends StatelessWidget {
   final int current;
   final bool finished;
 
-  const _StoneTrail({required this.trail, required this.current, required this.finished});
+  const _StoneTrail(
+      {required this.trail, required this.current, required this.finished});
 
   @override
   Widget build(BuildContext context) {
@@ -398,10 +419,12 @@ class _StoneTrail extends StatelessWidget {
           Widget? child;
           if (result == true) {
             fill = _Palette.correct;
-            child = const Icon(Icons.check_rounded, size: 14, color: Colors.white);
+            child =
+                const Icon(Icons.check_rounded, size: 14, color: Colors.white);
           } else if (result == false) {
             fill = _Palette.wrong;
-            child = const Icon(Icons.close_rounded, size: 14, color: Colors.white);
+            child =
+                const Icon(Icons.close_rounded, size: 14, color: Colors.white);
           } else {
             // Slightly opaque (rather than pure white) so pending stones
             // stay visible against the busier photographic-style backdrop.
@@ -417,7 +440,9 @@ class _StoneTrail extends StatelessWidget {
                   color: fill,
                   borderRadius: BorderRadius.circular(20),
                   border: result == null
-                      ? Border.all(color: _Palette.jungleDeep.withOpacity(0.25), width: 1.4)
+                      ? Border.all(
+                          color: _Palette.jungleDeep.withOpacity(0.25),
+                          width: 1.4)
                       : null,
                   boxShadow: [
                     BoxShadow(
@@ -445,7 +470,8 @@ class _SkillBadge extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _SkillBadge({required this.label, required this.icon, required this.color});
+  const _SkillBadge(
+      {required this.label, required this.icon, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -472,7 +498,8 @@ class _SkillBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: color),
+            style: TextStyle(
+                fontSize: 12.5, fontWeight: FontWeight.w800, color: color),
           ),
         ],
       ),
@@ -538,7 +565,8 @@ class _QuestionCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.97),
             borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: question.accent.withOpacity(0.35), width: 1.6),
+            border: Border.all(
+                color: question.accent.withOpacity(0.35), width: 1.6),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.12),
@@ -633,7 +661,8 @@ class _AnswerStone extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             '$value',
-            style: TextStyle(fontSize: 23, fontWeight: FontWeight.w900, color: fg),
+            style:
+                TextStyle(fontSize: 23, fontWeight: FontWeight.w900, color: fg),
           ),
         ),
       ),
@@ -687,7 +716,10 @@ class _ResultView extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'You got $score out of $total right',
-              style: TextStyle(fontSize: 14, color: _Palette.textMuted, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  fontSize: 14,
+                  color: _Palette.textMuted,
+                  fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 26),
             ElevatedButton(
@@ -695,18 +727,21 @@ class _ResultView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _Palette.jungleDeep,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
                 shape: const StadiumBorder(),
                 elevation: 0,
               ),
-              child: const Text('Play Again', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              child: const Text('Play Again',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
             ),
             const SizedBox(height: 10),
             TextButton(
               onPressed: onExit,
               child: Text(
                 'Back to Activities',
-                style: TextStyle(color: _Palette.textMuted, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    color: _Palette.textMuted, fontWeight: FontWeight.w700),
               ),
             ),
           ],

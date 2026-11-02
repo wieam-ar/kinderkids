@@ -86,7 +86,8 @@ class HomePage extends StatelessWidget {
 class FloatingShapesBackground extends StatefulWidget {
   const FloatingShapesBackground({super.key});
   @override
-  State<FloatingShapesBackground> createState() => _FloatingShapesBackgroundState();
+  State<FloatingShapesBackground> createState() =>
+      _FloatingShapesBackgroundState();
 }
 
 class _FloatingShapesBackgroundState extends State<FloatingShapesBackground>
@@ -265,7 +266,8 @@ class _HeroSectionState extends State<HeroSection>
     );
 
     final textBlock = Column(
-      crossAxisAlignment: wide ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      crossAxisAlignment:
+          wide ? CrossAxisAlignment.start : CrossAxisAlignment.center,
       children: [
         const BubbleTag(text: '🎉 A MATH SAFARI FOR KIDS 3–9'),
         const SizedBox(height: 18),
@@ -284,7 +286,7 @@ class _HeroSectionState extends State<HeroSection>
           width: 480,
           child: Text(
             'Hop, count and giggle your way through addition, subtraction '
-                'and more — with Léo the Lion cheering every answer, right or wrong!',
+            'and more — with Léo the Lion cheering every answer, right or wrong!',
             textAlign: wide ? TextAlign.left : TextAlign.center,
             style: const TextStyle(
               fontSize: 18,
@@ -299,8 +301,15 @@ class _HeroSectionState extends State<HeroSection>
           runSpacing: 12,
           alignment: wide ? WrapAlignment.start : WrapAlignment.center,
           children: [
-            BouncyButton(color: Palette.orange, label: '🚀 Start Playing!', onTap: () {}),
-            BouncyButton(color: Colors.white, textColor: Palette.ink, label: '🎬 Watch Léo', onTap: () {}),
+            BouncyButton(
+                color: Palette.orange,
+                label: '🚀 Start Playing!',
+                onTap: () {}),
+            BouncyButton(
+                color: Colors.white,
+                textColor: Palette.ink,
+                label: '🎬 Watch Léo',
+                onTap: () {}),
           ],
         ),
       ],
@@ -311,19 +320,19 @@ class _HeroSectionState extends State<HeroSection>
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 60),
       child: wide
           ? Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(child: textBlock),
-          Expanded(child: Center(child: mascot)),
-        ],
-      )
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(child: textBlock),
+                Expanded(child: Center(child: mascot)),
+              ],
+            )
           : Column(
-        children: [
-          textBlock,
-          const SizedBox(height: 20),
-          mascot,
-        ],
-      ),
+              children: [
+                textBlock,
+                const SizedBox(height: 20),
+                mascot,
+              ],
+            ),
     );
   }
 }
@@ -444,22 +453,22 @@ class StatsStrip extends StatelessWidget {
         runSpacing: 16,
         children: stats
             .map((s) => SizedBox(
-          width: 150,
-          child: Column(
-            children: [
-              Text(s.$1,
-                  style: const TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white)),
-              Text(s.$2,
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withOpacity(0.9))),
-            ],
-          ),
-        ))
+                  width: 150,
+                  child: Column(
+                    children: [
+                      Text(s.$1,
+                          style: const TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white)),
+                      Text(s.$2,
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withOpacity(0.9))),
+                    ],
+                  ),
+                ))
             .toList(),
       ),
     );
@@ -559,7 +568,8 @@ class _GameCardState extends State<GameCard> {
                 shape: BoxShape.circle,
                 border: Border.all(color: Palette.ink, width: 2.5),
               ),
-              child: Text(widget.game.symbol, style: const TextStyle(fontSize: 20)),
+              child: Text(widget.game.symbol,
+                  style: const TextStyle(fontSize: 20)),
             ),
             const SizedBox(height: 12),
             Text(
@@ -609,7 +619,7 @@ class MascotBanner extends StatelessWidget {
               ),
               child: const Text(
                 '"Yes! You got it! Wach ntouma jahzin bach nkemlo l-mغamra? '
-                    'Come on — every question is a new stone on our trail!" 🐾',
+                'Come on — every question is a new stone on our trail!" 🐾',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w700,
@@ -632,9 +642,21 @@ class TestimonialsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final quotes = [
-      ('Salma B.', '"My daughter BEGS to play the lion game every night!"', Palette.pink),
-      ('Youssef K.', '"He finally gets math — and he\'s laughing the whole time."', Palette.teal),
-      ('Imane R.', '"No ads, no stress. Just happy little wins."', Palette.orange),
+      (
+        'Salma B.',
+        '"My daughter BEGS to play the lion game every night!"',
+        Palette.pink
+      ),
+      (
+        'Youssef K.',
+        '"He finally gets math — and he\'s laughing the whole time."',
+        Palette.teal
+      ),
+      (
+        'Imane R.',
+        '"No ads, no stress. Just happy little wins."',
+        Palette.orange
+      ),
     ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 50),
@@ -642,7 +664,8 @@ class TestimonialsSection extends StatelessWidget {
         children: [
           const Text(
             'Loved by Parents 💛',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Palette.ink),
+            style: TextStyle(
+                fontSize: 32, fontWeight: FontWeight.w900, color: Palette.ink),
           ),
           const SizedBox(height: 26),
           Wrap(
@@ -707,10 +730,15 @@ class FinalCTASection extends StatelessWidget {
           const Text(
             'Ready for Your\nFirst Adventure?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white),
+            style: TextStyle(
+                fontSize: 34, fontWeight: FontWeight.w900, color: Colors.white),
           ),
           const SizedBox(height: 22),
-          BouncyButton(color: Colors.white, textColor: Palette.pink, label: '🚀 Get KinderKids Free', onTap: () {}),
+          BouncyButton(
+              color: Colors.white,
+              textColor: Palette.pink,
+              label: '🚀 Get KinderKids Free',
+              onTap: () {}),
         ],
       ),
     );
@@ -728,10 +756,15 @@ class KKFooter extends StatelessWidget {
       padding: const EdgeInsets.all(30),
       child: Column(
         children: [
-          const Text('🦁 KinderKids', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Palette.ink)),
+          const Text('🦁 KinderKids',
+              style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  color: Palette.ink)),
           const SizedBox(height: 8),
           Text('© 2026 KinderKids · Made with 💛 for little explorers',
-              style: TextStyle(fontSize: 13, color: Palette.ink.withOpacity(0.6))),
+              style:
+                  TextStyle(fontSize: 13, color: Palette.ink.withOpacity(0.6))),
         ],
       ),
     );

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-import '../../data/models/onboarding/Onboardingdata.dart';
+import '../../data/models/onboarding/onboarding_data.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -149,29 +149,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                 Padding(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: isFirstPage
                       ? _PrimaryButton(
-                    label: 'Get Started',
-                    onTap: _goNext,
-                  )
+                          label: 'Get Started',
+                          onTap: _goNext,
+                        )
                       : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _SecondaryButton(
-                        label: 'Back',
-                        onTap: () => _controller.previousPage(
-                          duration: const Duration(milliseconds: 350),
-                          curve: Curves.easeInOut,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _SecondaryButton(
+                              label: 'Back',
+                              onTap: () => _controller.previousPage(
+                                duration: const Duration(milliseconds: 350),
+                                curve: Curves.easeInOut,
+                              ),
+                            ),
+                            _PrimaryButton(
+                              label: isLastPage ? 'Start' : 'Next',
+                              onTap: _goNext,
+                              expand: false,
+                            ),
+                          ],
                         ),
-                      ),
-                      _PrimaryButton(
-                        label: isLastPage ? 'Start' : 'Next',
-                        onTap: _goNext,
-                        expand: false,
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),

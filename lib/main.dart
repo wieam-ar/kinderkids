@@ -1,9 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:kinderkids/mobile/features/dashboard/homeScreen.dart';
+import 'package:provider/provider.dart';
+
+import 'mobile/data/providers/progress_provider.dart';
+import 'mobile/features/navigation/main_navigation_screen.dart';
 import 'mobile/features/splash/splash_screen.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const KinderKidsApp());
+}
+
+class KinderKidsApp extends StatelessWidget {
+  const KinderKidsApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => ProgressProvider(),
+      child: MaterialApp(
+        title: 'Kinderkids',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: 'Poppins',
+          useMaterial3: true,
+        ),
+        home: const SplashScreen(),
+        routes: {
+          '/home': (context) => const MainNavigationScreen(),
+        },
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -11,17 +37,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Kinderkids',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Poppins', // add the font in pubspec.yaml if you have it
-        useMaterial3: true,
-      ),
-      home: const SplashScreen(),
-      routes: {
-        '/home': (context) => const HomeScreen(),
-      },
-    );
+    return const KinderKidsApp();
   }
 }

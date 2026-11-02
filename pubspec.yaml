@@ -16,6 +16,9 @@ dependencies:
   lottie: ^3.3.1
   audioplayers: 6.1.0
   video_player: ^2.9.2
+  shared_preferences: ^2.3.5
+  provider: ^6.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -30,5 +33,6 @@ flutter:
     - assets/data/
     - assets/loties/
     - assets/audios/
-    - assets/vedios/
+    - assets/videos/
     - assets/data/numbers.json
+    - assets/sounds/
