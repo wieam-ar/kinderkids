@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ui/app_ui.dart';
+import '../../core/ui/kid_ui.dart';
 import '../../data/models/adventure_model.dart';
 import '../../data/providers/progress_provider.dart';
 import '../alphabet/alphabet_screen.dart';
@@ -12,6 +14,22 @@ import '../math/mathexercice.dart';
 import '../numbers/number_screen.dart';
 import '../puzzle/puzzle_screen.dart';
 import '../stories/story_reading_screen.dart';
+
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+  double? letterSpacing,
+}) =>
+    GoogleFonts.fredoka(
+      fontSize: size,
+      fontWeight: weight,
+      color: color,
+      letterSpacing: letterSpacing,
+    );
+
+const Color _starGold = Color(0xFFFFB300);
+const Color _doneGreen = Color(0xFF35B24A);
 
 class LearningAdventureScreen extends StatelessWidget {
   const LearningAdventureScreen({super.key});
@@ -32,41 +50,23 @@ class LearningAdventureScreen extends StatelessWidget {
     final worlds = progress.worlds;
 
     return Scaffold(
-      body: ScreenBackground(
+      body: KidBackground(
+        colors: const [Color(0xFFD5F5DF), KidColors.cream],
         child: SafeArea(
           child: Column(
             children: [
+              const KidHeader(
+                title: 'My Adventure Map',
+                emoji: '🗺️',
+                subtitle: 'Explore worlds and earn stars!',
+              ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'My Adventure Map 🗺️',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textDark,
-                            ),
-                          ),
-                          Text(
-                            'Explore worlds and earn stars!',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    StarsChip(stars: progress.profile.totalStars, large: true),
-                  ],
+                padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _StarsPill(stars: progress.profile.totalStars),
                 ),
               ),
-              const SizedBox(height: 16),
               Expanded(
                 child: worlds.isEmpty
                     ? const EmptyState(
@@ -75,13 +75,13 @@ class LearningAdventureScreen extends StatelessWidget {
                   message: 'New adventures are on their way!',
                 )
                     : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
                   itemCount: worlds.length,
                   itemBuilder: (context, index) {
                     final world = worlds[index];
                     final leftAligned = index.isEven;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 4),
                       child: Column(
                         children: [
                           Align(
@@ -114,7 +114,43 @@ class LearningAdventureScreen extends StatelessWidget {
   }
 }
 
-class _WorldCardNode extends StatelessWidget {
+// -------------------------------------------------------------- stars pill
+
+class _StarsPill extends StatelessWidget {
+  final int stars;
+  const _StarsPill({required this.stars});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _starGold, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: _starGold.withOpacity(0.55),
+            offset: const Offset(0, 4),
+            blurRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('⭐', style: TextStyle(fontSize: 20)),
+          const SizedBox(width: 6),
+          Text('$stars', style: _fredoka(size: 18, weight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------- world card
+
+class _WorldCardNode extends StatefulWidget {
   final LearningWorld world;
   final int stage;
   final VoidCallback onTap;
@@ -126,80 +162,131 @@ class _WorldCardNode extends StatelessWidget {
   });
 
   @override
+  State<_WorldCardNode> createState() => _WorldCardNodeState();
+}
+
+class _WorldCardNodeState extends State<_WorldCardNode> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
+    const depth = 7.0;
+    final world = widget.world;
     final levelsDone = world.levels.where((l) => l.isCompleted).length;
     final levelsTotal = world.levels.length;
+    final offset = _down ? 2.0 : depth;
 
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.72,
-      child: GradientCard(
-        colors: world.gradientColors,
-        onTap: onTap,
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.25),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: depth),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 90),
+            transform: Matrix4.translationValues(0, depth - offset, 0),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              gradient: LinearGradient(
+                colors: world.gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: Text(world.emoji, style: const TextStyle(fontSize: 32)),
+              border:
+              Border.all(color: Colors.white.withOpacity(0.55), width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: KidColors.darken(world.gradientColors.last),
+                  offset: Offset(0, offset),
+                  blurRadius: 0,
+                ),
+              ],
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'WORLD $stage',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                      color: Colors.white70,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.28),
+                    border: Border.all(
+                        color: Colors.white.withOpacity(0.7), width: 3),
                   ),
-                  Text(
-                    world.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '⭐ ${world.currentStars} / ${world.totalStarsPossible}'
-                        '  •  $levelsDone/$levelsTotal levels',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween<double>(end: world.progressRatio),
-                      duration: const Duration(milliseconds: 700),
-                      curve: Curves.easeOutCubic,
-                      builder: (_, value, __) => LinearProgressIndicator(
-                        value: value,
-                        backgroundColor: Colors.white24,
-                        color: Colors.white,
-                        minHeight: 6,
+                  child: Text(world.emoji, style: const TextStyle(fontSize: 32)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'WORLD ${widget.stage}',
+                        style: _fredoka(
+                          size: 11,
+                          color: Colors.white.withOpacity(0.85),
+                          weight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
+                      Text(
+                        world.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _fredoka(
+                            size: 18,
+                            color: Colors.white,
+                            weight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '⭐ ${world.currentStars} / ${world.totalStarsPossible}'
+                            '  •  $levelsDone/$levelsTotal levels',
+                        style: _fredoka(
+                            size: 12,
+                            color: Colors.white.withOpacity(0.92),
+                            weight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 7),
+                      Container(
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween<double>(end: world.progressRatio),
+                            duration: const Duration(milliseconds: 700),
+                            curve: Curves.easeOutCubic,
+                            builder: (_, value, __) => Align(
+                              alignment: Alignment.centerLeft,
+                              child: FractionallySizedBox(
+                                widthFactor: value.clamp(0.0, 1.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -216,7 +303,7 @@ class _ConnectorPath extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 36,
       width: double.infinity,
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: 1),
@@ -225,7 +312,7 @@ class _ConnectorPath extends StatelessWidget {
         builder: (_, t, __) => CustomPaint(
           painter: _PathPainter(
             leftToRight: leftToRight,
-            color: color.withOpacity(0.55),
+            color: color.withOpacity(0.6),
             progress: t,
           ),
         ),
@@ -249,7 +336,7 @@ class _PathPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..strokeWidth = 3.5
+      ..strokeWidth = 5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
@@ -262,8 +349,8 @@ class _PathPainter extends CustomPainter {
       ..cubicTo(startX, size.height * 0.5, endX, size.height * 0.5, endX,
           size.height);
 
-    const dash = 8.0;
-    const gap = 7.0;
+    const dash = 9.0;
+    const gap = 8.0;
     for (final metric in path.computeMetrics()) {
       final limit = metric.length * progress;
       var distance = 0.0;
@@ -281,6 +368,8 @@ class _PathPainter extends CustomPainter {
           old.color != color ||
           old.leftToRight != leftToRight;
 }
+
+// ------------------------------------------------------------ levels sheet
 
 class _WorldLevelsSheet extends StatelessWidget {
   final String worldId;
@@ -350,15 +439,17 @@ class _WorldLevelsSheet extends StatelessWidget {
           (w) => w.id == worldId,
       orElse: () => fallback,
     );
+    final accent = world.gradientColors.last;
 
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: KidColors.cream,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
+        border: Border(top: BorderSide(color: accent, width: 5)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -366,10 +457,10 @@ class _WorldLevelsSheet extends StatelessWidget {
         children: [
           Center(
             child: Container(
-              width: 44,
-              height: 5,
+              width: 48,
+              height: 6,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: accent.withOpacity(0.35),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -377,26 +468,35 @@ class _WorldLevelsSheet extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              Text(world.emoji, style: const TextStyle(fontSize: 34)),
+              Container(
+                width: 58,
+                height: 58,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: world.gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  border: Border.all(
+                      color: Colors.white.withOpacity(0.7), width: 3),
+                ),
+                child: Text(world.emoji, style: const TextStyle(fontSize: 30)),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(world.name,
+                        style: _fredoka(size: 21, weight: FontWeight.w800)),
                     Text(
-                      world.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                    const Text(
                       'Levels & Challenges',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textMuted,
-                      ),
+                      style: _fredoka(
+                          size: 13,
+                          color: KidColors.textMuted,
+                          weight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -405,13 +505,12 @@ class _WorldLevelsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Flexible(
-            child: ListView.separated(
+            child: ListView.builder(
               shrinkWrap: true,
               itemCount: world.levels.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, i) => _LevelTile(
                 level: world.levels[i],
-                accent: world.gradientColors.last,
+                accent: accent,
                 onTap: () => _playLevel(context, world, world.levels[i]),
               ),
             ),
@@ -422,7 +521,7 @@ class _WorldLevelsSheet extends StatelessWidget {
   }
 }
 
-class _LevelTile extends StatelessWidget {
+class _LevelTile extends StatefulWidget {
   final WorldLevel level;
   final Color accent;
   final VoidCallback onTap;
@@ -434,34 +533,73 @@ class _LevelTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final unlocked = level.isUnlocked;
+  State<_LevelTile> createState() => _LevelTileState();
+}
 
-    return Material(
-      color: unlocked ? const Color(0xFFF6F9FA) : Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: unlocked ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
+class _LevelTileState extends State<_LevelTile> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const depth = 5.0;
+    final level = widget.level;
+    final unlocked = level.isUnlocked;
+    final done = level.isCompleted;
+    final accent = unlocked ? (done ? _doneGreen : widget.accent) : Colors.grey;
+    final offset = (_down && unlocked) ? 2.0 : depth;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: unlocked ? (_) => setState(() => _down = true) : null,
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: unlocked ? widget.onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: unlocked
+                ? (done ? KidColors.lighten(_doneGreen, 0.5) : Colors.white)
+                : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: accent.withOpacity(unlocked ? 0.5 : 0.35),
+              width: 3,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(unlocked ? 0.5 : 0.3),
+                offset: Offset(0, offset),
+                blurRadius: 0,
+              ),
+            ],
+          ),
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: 46,
+                height: 46,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: unlocked ? accent : Colors.grey.shade300,
+                  boxShadow: [
+                    BoxShadow(
+                      color: unlocked
+                          ? KidColors.darken(accent)
+                          : Colors.grey.shade400,
+                      offset: const Offset(0, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Text(
                   '${level.levelNumber}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+                  style: _fredoka(
+                      size: 19, color: Colors.white, weight: FontWeight.w800),
                 ),
               ),
               const SizedBox(width: 14),
@@ -471,32 +609,33 @@ class _LevelTile extends StatelessWidget {
                   children: [
                     Text(
                       level.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14.5,
+                      style: _fredoka(
+                        size: 16,
+                        weight: FontWeight.w800,
                         color: unlocked
-                            ? AppColors.textDark
+                            ? KidColors.textDark
                             : Colors.grey.shade500,
                       ),
                     ),
                     Text(
                       level.description,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
+                      style: _fredoka(
+                          size: 12.5,
+                          color: KidColors.textMuted,
+                          weight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              if (level.isCompleted)
+              if (done)
                 const Icon(Icons.check_circle_rounded,
-                    color: AppColors.success, size: 26)
+                    color: _doneGreen, size: 30)
               else if (!unlocked)
-                const Icon(Icons.lock_rounded, color: Colors.grey, size: 20)
+                const Icon(Icons.lock_rounded, color: Colors.grey, size: 22)
               else
-                Icon(Icons.play_circle_fill_rounded, color: accent, size: 30),
+                Icon(Icons.play_circle_fill_rounded,
+                    color: widget.accent, size: 34),
             ],
           ),
         ),

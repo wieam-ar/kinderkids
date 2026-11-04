@@ -1,25 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/ui/kid_ui.dart';
 import '../../data/models/video/video.dart';
 import 'video_player_screen.dart';
 
-/// Videos activity: grid dyal cards kbar w mlawnin.
-/// Tap 3la card kay7el [VideoPlayerScreen].
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
+
+/// Videos activity: grid of big colourful cards.
+/// Tapping a card opens [VideoPlayerScreen].
 class VideosScreen extends StatefulWidget {
   const VideosScreen({super.key});
-
-  static const Color bgTop = Color(0xFFF8F9FC);
-  static const Color bgBottom = Color(0xFFDBEEF6);
-  static const Color textDark = Color(0xFF213238);
-  static const Color textMuted = Color(0xFF7C8C93);
 
   @override
   State<VideosScreen> createState() => _VideosScreenState();
 }
 
 class _VideosScreenState extends State<VideosScreen> {
-  /// videos li tchafo (tsjjlo f session)
+  /// videos watched (kept for this session)
   final Set<String> _watched = {};
 
   void _openVideo(VideoItem video) {
@@ -42,164 +46,105 @@ class _VideosScreenState extends State<VideosScreen> {
     final columns = width >= 600 ? 3 : 2;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [VideosScreen.bgTop, VideosScreen.bgBottom],
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -60,
-              right: -40,
-              child: _GlowBlob(color: const Color(0xFF7B61FF), size: 220),
-            ),
-            Positioned(
-              bottom: -80,
-              left: -60,
-              child: _GlowBlob(color: const Color(0xFFE0507B), size: 240),
-            ),
-            SafeArea(
-              child: Column(
-                children: [
-                  // --- Top bar ---
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 20, 0),
-                    child: Row(
-                      children: [
-                        _BackButton(onTap: () => Navigator.of(context).pop()),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            '🎬 Video Time',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: VideosScreen.textDark,
-                            ),
-                          ),
-                        ),
-                        if (videoItems.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${_watched.length}/${videoItems.length} ✅',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: VideosScreen.textDark,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 24),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Pick a video to watch & learn',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: VideosScreen.textMuted,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- Grid ---
-                  Expanded(
-                    child: videoItems.isEmpty
-                        ? const Center(
-                      child: Text(
-                        '🎞️\nNo videos yet',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: VideosScreen.textMuted,
-                        ),
-                      ),
-                    )
-                        : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: videoItems.length,
-                      gridDelegate:
-                      SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 0.85,
-                      ),
-                      itemBuilder: (context, index) {
-                        final video = videoItems[index];
-                        final delayIndex = index > 6 ? 6 : index;
-                        return _AnimatedEntry(
-                          delayMs: delayIndex * 80,
-                          child: _VideoCard(
-                            video: video,
-                            watched: _watched.contains(video.file),
-                            onTap: () => _openVideo(video),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+      body: KidBackground(
+        colors: const [Color(0xFFE4DAFB), KidColors.cream],
+        child: SafeArea(
+          child: Column(
+            children: [
+              const KidHeader(
+                title: 'Video Time',
+                emoji: '🎬',
+                subtitle: 'Pick a video to watch & learn',
               ),
-            ),
-          ],
+              if (videoItems.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: _WatchedPill(
+                      watched: _watched.length,
+                      total: videoItems.length,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: videoItems.isEmpty
+                    ? Center(
+                  child: Text(
+                    '🎞️\nNo videos yet',
+                    textAlign: TextAlign.center,
+                    style: _fredoka(
+                      size: 20,
+                      color: KidColors.textMuted,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                )
+                    : GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
+                  itemCount: videoItems.length,
+                  gridDelegate:
+                  SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 0.82,
+                  ),
+                  itemBuilder: (context, index) {
+                    final video = videoItems[index];
+                    final delayIndex = index > 6 ? 6 : index;
+                    return _AnimatedEntry(
+                      delayMs: delayIndex * 80,
+                      child: _VideoCard(
+                        video: video,
+                        watched: _watched.contains(video.file),
+                        onTap: () => _openVideo(video),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _BackButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BackButton({required this.onTap});
+// ----------------------------------------------------------- watched pill
+
+class _WatchedPill extends StatelessWidget {
+  final int watched;
+  final int total;
+  const _WatchedPill({required this.watched, required this.total});
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Back',
-      child: Material(
+    const green = Color(0xFF35B24A);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
         color: Colors.white,
-        shape: const CircleBorder(),
-        elevation: 2,
-        shadowColor: Colors.black26,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: const SizedBox(
-            width: 48,
-            height: 48,
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 20,
-              color: VideosScreen.textDark,
-            ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: green.withOpacity(0.6), width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: green.withOpacity(0.45),
+            offset: const Offset(0, 3),
+            blurRadius: 0,
           ),
-        ),
+        ],
+      ),
+      child: Text(
+        '$watched/$total ✅',
+        style: _fredoka(size: 14, weight: FontWeight.w800),
       ),
     );
   }
 }
 
-/// Fade + slide f dkhoul, b delay.
+/// Fade + slide on entry, with a delay.
 class _AnimatedEntry extends StatefulWidget {
   final Widget child;
   final int delayMs;
@@ -237,6 +182,8 @@ class _AnimatedEntryState extends State<_AnimatedEntry> {
   }
 }
 
+// -------------------------------------------------------------- video card
+
 class _VideoCard extends StatefulWidget {
   final VideoItem video;
   final bool watched;
@@ -253,42 +200,50 @@ class _VideoCard extends StatefulWidget {
 }
 
 class _VideoCardState extends State<_VideoCard> {
-  bool _pressed = false;
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
+    const depth = 7.0;
     final colors =
     widget.video.colors.map((c) => Color(c)).toList(growable: false);
+    final gradient = colors.length > 1 ? colors : [colors.first, colors.first];
+    final accent = colors.last;
+    final offset = _down ? 2.0 : depth;
 
     return Semantics(
       button: true,
       label: 'Play ${widget.video.title}',
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: (_) => setState(() => _pressed = false),
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
         onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _pressed ? 0.95 : 1.0,
-          duration: const Duration(milliseconds: 120),
-          child: Container(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: depth),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 90),
+            transform: Matrix4.translationValues(0, depth - offset, 0),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(28),
               gradient: LinearGradient(
-                colors: colors,
+                colors: gradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              border:
+              Border.all(color: Colors.white.withOpacity(0.6), width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: colors.last.withOpacity(0.45),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: KidColors.darken(accent),
+                  offset: Offset(0, offset),
+                  blurRadius: 0,
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(25),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -304,37 +259,42 @@ class _VideoCardState extends State<_VideoCard> {
                       ),
                     ),
                   ),
-                  // play button kbir
+                  // big play button
                   Align(
-                    alignment: const Alignment(0, -0.3),
+                    alignment: const Alignment(0, -0.25),
                     child: Container(
-                      width: 64,
-                      height: 64,
+                      width: 66,
+                      height: 66,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.28),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.7),
-                          width: 1.6,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow_rounded,
                         color: Colors.white,
-                        size: 38,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.18),
+                            offset: const Offset(0, 4),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        color: accent,
+                        size: 42,
                       ),
                     ),
                   ),
                   // emoji badge
                   Positioned(
-                    top: 12,
-                    left: 12,
+                    top: 10,
+                    left: 10,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.28),
-                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.7), width: 2),
                       ),
                       child: Text(
                         widget.video.emoji,
@@ -345,15 +305,15 @@ class _VideoCardState extends State<_VideoCard> {
                   // watched badge
                   if (widget.watched)
                     const Positioned(
-                      top: 12,
-                      right: 12,
+                      top: 10,
+                      right: 10,
                       child: CircleAvatar(
-                        radius: 14,
+                        radius: 15,
                         backgroundColor: Colors.white,
                         child: Icon(
                           Icons.check_rounded,
                           color: Color(0xFF35B24A),
-                          size: 20,
+                          size: 22,
                         ),
                       ),
                     ),
@@ -361,7 +321,7 @@ class _VideoCardState extends State<_VideoCard> {
                   Positioned(
                     left: 14,
                     right: 14,
-                    bottom: 14,
+                    bottom: 12,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -370,21 +330,20 @@ class _VideoCardState extends State<_VideoCard> {
                           widget.video.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
+                          style: _fredoka(
+                              size: 16.5,
+                              color: Colors.white,
+                              weight: FontWeight.w800),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 1),
                         Text(
                           widget.video.subtitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: _fredoka(
+                            size: 12.5,
                             color: Colors.white.withOpacity(0.92),
-                            fontWeight: FontWeight.w600,
+                            weight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -393,28 +352,6 @@ class _VideoCardState extends State<_VideoCard> {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlowBlob extends StatelessWidget {
-  final Color color;
-  final double size;
-  const _GlowBlob({required this.color, required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [color.withOpacity(0.35), color.withOpacity(0.0)],
           ),
         ),
       ),

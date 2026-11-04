@@ -1,8 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/ui/kid_ui.dart';
 import '../science/fun_common.dart';
+
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
 
 /// Free-draw canvas: finger painting with sparkles, a rainbow brush,
 /// undo/redo, a fading "clear" animation, in English / Français / العربية.
@@ -15,9 +24,8 @@ class DrawScreen extends StatefulWidget {
 
 class _DrawScreenState extends State<DrawScreen>
     with TickerProviderStateMixin, FunLang<DrawScreen> {
-  static const Color primaryBlue = Color(0xFF0F92CA);
-  static const Color primaryBlueDark = Color(0xFF0B6E9B);
-  static const Color textDark = Color(0xFF213238);
+  static const Color primaryBlue = Color(0xFF3AAAE0);
+  static const Color clearRed = Color(0xFFE0507B);
 
   static const List<Color> _palette = [
     Color(0xFFE0507B),
@@ -162,30 +170,33 @@ class _DrawScreenState extends State<DrawScreen>
     return Directionality(
       textDirection: dir,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F9FB),
-        body: Stack(
-          children: [
-            const Positioned.fill(
-              child: LabBackdrop(
-                color: primaryBlue,
-                emojis: ['✏️', '🖍️', '🎨', '⭐', '🌈'],
+        body: KidBackground(
+          colors: const [Color(0xFFD6EEFB), KidColors.cream],
+          child: Stack(
+            children: [
+              const Positioned.fill(
+                child: LabBackdrop(
+                  color: primaryBlue,
+                  emojis: ['✏️', '🖍️', '🎨', '⭐', '🌈'],
+                ),
               ),
-            ),
-            SafeArea(
-              child: Column(
-                children: [
-                  _buildTopBar(context),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: LabLangBar(),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(child: FunPopIn(delayMs: 60, child: _buildCanvas())),
-                  FunPopIn(delayMs: 180, child: _buildBottomPanel()),
-                ],
+              SafeArea(
+                child: Column(
+                  children: [
+                    _buildTopBar(context),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: LabLangBar(),
+                    ),
+                    const SizedBox(height: 10),
+                    Expanded(
+                        child: FunPopIn(delayMs: 60, child: _buildCanvas())),
+                    FunPopIn(delayMs: 180, child: _buildBottomPanel()),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -196,9 +207,10 @@ class _DrawScreenState extends State<DrawScreen>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         children: [
-          FunRoundButton(
+          _RoundBtn(
             icon: Icons.arrow_back_rounded,
             tooltip: tr('back'),
+            color: const Color(0xFF213238),
             onTap: () => Navigator.of(context).maybePop(),
           ),
           const SizedBox(width: 12),
@@ -208,24 +220,22 @@ class _DrawScreenState extends State<DrawScreen>
               child: Text(
                 '${tr('draw_title')} ✏️',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: textDark,
-                ),
+                style: _fredoka(size: 22, weight: FontWeight.w800),
               ),
             ),
           ),
-          FunRoundButton(
+          _RoundBtn(
             icon: Icons.undo_rounded,
             tooltip: tr('undo'),
+            color: primaryBlue,
             onTap: _undo,
             enabled: _strokes.isNotEmpty && !_clearing,
           ),
           const SizedBox(width: 8),
-          FunRoundButton(
+          _RoundBtn(
             icon: Icons.redo_rounded,
             tooltip: tr('redo'),
+            color: primaryBlue,
             onTap: _redo,
             enabled: _redoStack.isNotEmpty && !_clearing,
           ),
@@ -236,17 +246,18 @@ class _DrawScreenState extends State<DrawScreen>
 
   Widget _buildCanvas() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: primaryBlue.withOpacity(0.8), width: 4),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 16,
+              color: primaryBlue.withOpacity(0.5),
               offset: const Offset(0, 6),
+              blurRadius: 0,
             ),
           ],
         ),
@@ -286,10 +297,10 @@ class _DrawScreenState extends State<DrawScreen>
                             const SizedBox(height: 6),
                             Text(
                               tr('draw_hint'),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: textDark.withOpacity(0.35),
+                              style: _fredoka(
+                                size: 17,
+                                weight: FontWeight.w800,
+                                color: KidColors.textDark.withOpacity(0.35),
                               ),
                             ),
                           ],
@@ -325,16 +336,17 @@ class _DrawScreenState extends State<DrawScreen>
   Widget _buildBottomPanel() {
     final previewColor = _selectedColor;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: primaryBlue.withOpacity(0.4), width: 3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: primaryBlue.withOpacity(0.4),
+            offset: const Offset(0, 5),
+            blurRadius: 0,
           ),
         ],
       ),
@@ -345,8 +357,8 @@ class _DrawScreenState extends State<DrawScreen>
             children: [
               // Live brush preview
               SizedBox(
-                width: 30,
-                height: 30,
+                width: 34,
+                height: 34,
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
@@ -363,15 +375,19 @@ class _DrawScreenState extends State<DrawScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: SliderTheme(
                   data: SliderTheme.of(context).copyWith(
+                    trackHeight: 10,
+                    trackShape: const RoundedRectSliderTrackShape(),
+                    thumbShape:
+                    const RoundSliderThumbShape(enabledThumbRadius: 10),
+                    overlayShape:
+                    const RoundSliderOverlayShape(overlayRadius: 18),
                     activeTrackColor: primaryBlue,
-                    inactiveTrackColor: primaryBlue.withOpacity(0.15),
-                    thumbColor: primaryBlueDark,
-                    overlayColor: primaryBlue.withOpacity(0.15),
-                    trackHeight: 4,
+                    inactiveTrackColor: primaryBlue.withOpacity(0.2),
+                    thumbColor: Colors.white,
                   ),
                   child: Slider(
                     min: 3,
@@ -381,18 +397,18 @@ class _DrawScreenState extends State<DrawScreen>
                   ),
                 ),
               ),
-              FunRoundButton(
+              _RoundBtn(
                 icon: Icons.delete_outline_rounded,
                 tooltip: tr('clear'),
                 onTap: _clear,
                 enabled: _strokes.isNotEmpty && !_clearing,
-                color: const Color(0xFFE0507B),
+                color: clearRed,
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
-            height: 46,
+            height: 52,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _palette.length + 1,
@@ -402,7 +418,7 @@ class _DrawScreenState extends State<DrawScreen>
                 final selected = isRainbow
                     ? _rainbow
                     : (!_rainbow && _palette[index] == _selectedColor);
-                final size = selected ? 42.0 : 34.0;
+                final size = selected ? 46.0 : 36.0;
                 final color = isRainbow ? Colors.pinkAccent : _palette[index];
 
                 return FunPopIn(
@@ -428,14 +444,18 @@ class _DrawScreenState extends State<DrawScreen>
                                 : null,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: Colors.white,
-                              width: selected ? 3 : 2,
+                              color: selected
+                                  ? KidColors.textDark
+                                  : Colors.white,
+                              width: selected ? 3.5 : 2.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: color.withOpacity(selected ? 0.5 : 0.25),
-                                blurRadius: selected ? 10 : 6,
-                                offset: const Offset(0, 3),
+                                color: isRainbow
+                                    ? Colors.pink.shade300
+                                    : KidColors.darken(color),
+                                offset: Offset(0, selected ? 4 : 3),
+                                blurRadius: 0,
                               ),
                             ],
                           ),
@@ -458,6 +478,77 @@ class _DrawScreenState extends State<DrawScreen>
     );
   }
 }
+
+// ------------------------------------------------------------ round button
+
+/// Round 3D button that sinks when pressed; greys out when disabled.
+class _RoundBtn extends StatefulWidget {
+  final IconData icon;
+  final String tooltip;
+  final Color color;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  const _RoundBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.color,
+    required this.onTap,
+    this.enabled = true,
+  });
+
+  @override
+  State<_RoundBtn> createState() => _RoundBtnState();
+}
+
+class _RoundBtnState extends State<_RoundBtn> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const depth = 4.0;
+    final on = widget.enabled;
+    final color = on ? widget.color : Colors.grey.shade300;
+    final offset = (_down && on) ? 1.0 : depth;
+
+    return Tooltip(
+      message: widget.tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: on ? (_) => setState(() => _down = true) : null,
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: on ? widget.onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: depth),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 90),
+            transform: Matrix4.translationValues(0, depth - offset, 0),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border:
+              Border.all(color: Colors.white.withOpacity(0.6), width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: on ? KidColors.darken(color) : Colors.grey.shade400,
+                  offset: Offset(0, offset),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: Icon(widget.icon,
+                color: on ? Colors.white : Colors.grey.shade500, size: 24),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------------------- painter
 
 class _Stroke {
   final Color color;

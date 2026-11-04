@@ -2,17 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../data/models/video/video.dart';
 
-/// Player dyal video wa7ed, mkhdoum l'atfal:
-/// controls kbar, auto-hide, ±10s, replay, fullscreen, error friendly.
-/// Video f assets/videos/<file>.
+TextStyle _fredoka({
+  double size = 15,
+  Color color = Colors.white,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
+
+/// Player for a single video, made for kids:
+/// big controls, auto-hide, ±10s, replay, fullscreen, friendly errors.
+/// Video file lives in assets/videos/<file>.
 class VideoPlayerScreen extends StatefulWidget {
   final VideoItem video;
 
-  /// kat-t3ayet mra wa7da mnin t-chouf 90% men video
+  /// called once when 90% of the video has been watched
   final VoidCallback? onWatched;
 
   const VideoPlayerScreen({super.key, required this.video, this.onWatched});
@@ -85,7 +93,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     _hideTimer?.cancel();
     _controller.removeListener(_onTick);
     _controller.dispose();
-    // raje3 l'orientation w system UI
+    // restore orientation + system UI
     SystemChrome.setPreferredOrientations(
       const [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
     );
@@ -177,7 +185,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF14121F),
         body: SafeArea(
           child: _error ? _buildError() : _buildPlayer(),
         ),
@@ -192,35 +200,19 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('😿', style: TextStyle(fontSize: 64)),
+            const Text('😿', style: TextStyle(fontSize: 72)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "Oops! This video can't play right now",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
+              style: _fredoka(size: 20, weight: FontWeight.w800),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back_rounded),
-              label: const Text('Go back'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                foregroundColor: Colors.white,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+            _ChunkyButton(
+              label: 'Go back',
+              icon: Icons.arrow_back_rounded,
+              color: accent,
+              onTap: () => Navigator.of(context).pop(),
             ),
           ],
         ),
@@ -239,21 +231,28 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             onTap: _initialized ? _toggleControls : null,
             child: Center(
               child: _initialized
-                  ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
+                  ? Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(_fullscreen ? 0 : 24),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: AspectRatio(
+                  aspectRatio: _controller.value.aspectRatio,
+                  child: VideoPlayer(_controller),
+                ),
               )
-                  : const Column(
+                  : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: Colors.white),
-                  SizedBox(height: 16),
+                  const CircularProgressIndicator(
+                      color: accent, strokeWidth: 5),
+                  const SizedBox(height: 18),
                   Text(
                     'Getting your video ready... 🍿',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: _fredoka(
+                        size: 16,
+                        color: Colors.white70,
+                        weight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -298,26 +297,25 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             icon: Icons.arrow_back_ios_new_rounded,
             size: 48,
             iconSize: 20,
+            color: Colors.white,
+            iconColor: const Color(0xFF213238),
             onTap: () => Navigator.of(context).pop(),
             semantics: 'Back',
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.45),
-                borderRadius: BorderRadius.circular(20),
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: accent.withOpacity(0.8), width: 2.5),
               ),
               child: Text(
                 '${widget.video.emoji}  ${widget.video.title}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
+                style: _fredoka(size: 17, weight: FontWeight.w800),
               ),
             ),
           ),
@@ -334,21 +332,22 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
         children: [
           _RoundButton(
             icon: Icons.replay_10_rounded,
-            size: 56,
+            size: 58,
             iconSize: 30,
+            color: const Color(0xFF7B61FF),
             onTap: () => _seekBy(-10),
             semantics: 'Back 10 seconds',
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 22),
           _RoundButton(
             icon: ended
                 ? Icons.replay_rounded
                 : value.isPlaying
                 ? Icons.pause_rounded
                 : Icons.play_arrow_rounded,
-            size: 80,
-            iconSize: 48,
-            filled: true,
+            size: 84,
+            iconSize: 50,
+            color: accent,
             onTap: _togglePlayPause,
             semantics: ended
                 ? 'Replay'
@@ -356,11 +355,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
                 ? 'Pause'
                 : 'Play',
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 22),
           _RoundButton(
             icon: Icons.forward_10_rounded,
-            size: 56,
+            size: 58,
             iconSize: 30,
+            color: const Color(0xFF7B61FF),
             onTap: () => _seekBy(10),
             semantics: 'Forward 10 seconds',
           ),
@@ -375,14 +375,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.55),
-          borderRadius: BorderRadius.circular(20),
+          color: Colors.black.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white24, width: 2),
         ),
         child: Row(
           children: [
             Text(
               _formatDuration(value.position),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: _fredoka(size: 13, weight: FontWeight.w600),
             ),
             Expanded(
               child: Padding(
@@ -401,7 +402,8 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
             ),
             Text(
               _formatDuration(value.duration),
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: _fredoka(
+                  size: 13, color: Colors.white70, weight: FontWeight.w600),
             ),
             const SizedBox(width: 4),
             IconButton(
@@ -422,11 +424,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen>
   }
 }
 
-class _RoundButton extends StatelessWidget {
+// ---------------------------------------------------------------- buttons
+
+/// Round 3D button that sinks when pressed.
+class _RoundButton extends StatefulWidget {
   final IconData icon;
   final double size;
   final double iconSize;
-  final bool filled;
+  final Color color;
+  final Color iconColor;
   final VoidCallback onTap;
   final String semantics;
 
@@ -436,26 +442,125 @@ class _RoundButton extends StatelessWidget {
     required this.iconSize,
     required this.onTap,
     required this.semantics,
-    this.filled = false,
+    required this.color,
+    this.iconColor = Colors.white,
   });
 
   @override
+  State<_RoundButton> createState() => _RoundButtonState();
+}
+
+class _RoundButtonState extends State<_RoundButton> {
+  bool _down = false;
+
+  Color _darken(Color c) {
+    final hsl = HSLColor.fromColor(c);
+    return hsl.withLightness((hsl.lightness - 0.18).clamp(0.0, 1.0)).toColor();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    const depth = 5.0;
+    final offset = _down ? 2.0 : depth;
+
     return Semantics(
       button: true,
-      label: semantics,
-      child: Material(
-        color: filled
-            ? _VideoPlayerScreenState.accent
-            : Colors.black.withOpacity(0.5),
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Icon(icon, color: Colors.white, size: iconSize),
+      label: widget.semantics,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _down = true),
+        onTapCancel: () => setState(() => _down = false),
+        onTapUp: (_) => setState(() => _down = false),
+        onTap: widget.onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: depth),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 90),
+            transform: Matrix4.translationValues(0, depth - offset, 0),
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.color,
+              border: Border.all(
+                  color: Colors.white.withOpacity(0.55), width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: _darken(widget.color),
+                  offset: Offset(0, offset),
+                  blurRadius: 0,
+                ),
+              ],
+            ),
+            child: Icon(widget.icon,
+                color: widget.iconColor, size: widget.iconSize),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChunkyButton extends StatefulWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ChunkyButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  State<_ChunkyButton> createState() => _ChunkyButtonState();
+}
+
+class _ChunkyButtonState extends State<_ChunkyButton> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const depth = 6.0;
+    final offset = _down ? 2.0 : depth;
+    final hsl = HSLColor.fromColor(widget.color);
+    final shadow =
+    hsl.withLightness((hsl.lightness - 0.18).clamp(0.0, 1.0)).toColor();
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: depth),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+          decoration: BoxDecoration(
+            color: widget.color,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withOpacity(0.55), width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: shadow,
+                offset: Offset(0, offset),
+                blurRadius: 0,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, color: Colors.white, size: 22),
+              const SizedBox(width: 8),
+              Text(widget.label,
+                  style: _fredoka(size: 17, weight: FontWeight.w800)),
+            ],
           ),
         ),
       ),

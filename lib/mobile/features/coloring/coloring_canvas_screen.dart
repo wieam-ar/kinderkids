@@ -4,8 +4,17 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/ui/kid_ui.dart';
 import 'coloring_item.dart';
+
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
 
 /// Bucket-fill coloring page. Tap anywhere inside the outline artwork and
 /// the enclosed region under your finger fills with the selected color —
@@ -19,9 +28,6 @@ class ColoringCanvasScreen extends StatefulWidget {
 }
 
 class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
-  static const Color primaryBlue = Color(0xFF0F92CA);
-  static const Color textDark = Color(0xFF213238);
-
   static const List<Color> _palette = [
     Color(0xFFE0507B),
     Color(0xFFFFC542),
@@ -50,6 +56,8 @@ class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
   bool _busy = false; // true while flood-filling, to ignore extra taps
 
   static const int _colorTolerance = 40; // 0-441, higher = fills more shades
+
+  Color get _accent => widget.item.accentColor;
 
   @override
   void initState() {
@@ -223,18 +231,22 @@ class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
     await _restoreFrom(_pixels!);
   }
 
+  // ---- UI ----------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F9FB),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-            const SizedBox(height: 4),
-            Expanded(child: _buildCanvasArea()),
-            _buildPalette(),
-          ],
+      body: KidBackground(
+        colors: [widget.item.bgColor, KidColors.cream],
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildTopBar(),
+              const SizedBox(height: 4),
+              Expanded(child: _buildCanvasArea()),
+              _buildPalette(),
+            ],
+          ),
         ),
       ),
     );
@@ -247,28 +259,29 @@ class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
         children: [
           _RoundIconButton(
             icon: Icons.arrow_back_rounded,
+            color: KidColors.textDark,
             onTap: () => Navigator.of(context).maybePop(),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               widget.item.title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: textDark,
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _fredoka(size: 22, weight: FontWeight.w800),
             ),
           ),
           _RoundIconButton(
             icon: Icons.undo_rounded,
+            color: _accent,
             onTap: _undo,
             enabled: _undoStack.isNotEmpty,
           ),
           const SizedBox(width: 8),
           _RoundIconButton(
             icon: Icons.redo_rounded,
+            color: _accent,
             onTap: _redo,
             enabled: _redoStack.isNotEmpty,
           ),
@@ -285,23 +298,24 @@ class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
 
   Widget _buildCanvasArea() {
     if (_loading || _displayImage == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: primaryBlue),
+      return Center(
+        child: CircularProgressIndicator(color: _accent, strokeWidth: 5),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: _accent.withOpacity(0.8), width: 4),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 16,
+              color: _accent.withOpacity(0.5),
               offset: const Offset(0, 6),
+              blurRadius: 0,
             ),
           ],
         ),
@@ -337,21 +351,22 @@ class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
 
   Widget _buildPalette() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: _accent.withOpacity(0.4), width: 3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+            color: _accent.withOpacity(0.4),
+            offset: const Offset(0, 5),
+            blurRadius: 0,
           ),
         ],
       ),
       child: SizedBox(
-        height: 44,
+        height: 52,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: _palette.length,
@@ -359,26 +374,29 @@ class _ColoringCanvasScreenState extends State<ColoringCanvasScreen> {
           itemBuilder: (context, index) {
             final color = _palette[index];
             final selected = color == _selectedColor;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedColor = color),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: selected ? 44 : 36,
-                height: selected ? 44 : 36,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white,
-                    width: selected ? 3 : 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(selected ? 0.45 : 0.25),
-                      blurRadius: selected ? 10 : 6,
-                      offset: const Offset(0, 3),
+            return Center(
+              child: GestureDetector(
+                onTap: () => setState(() => _selectedColor = color),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  curve: Curves.easeOutBack,
+                  width: selected ? 46 : 36,
+                  height: selected ? 46 : 36,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? KidColors.textDark : Colors.white,
+                      width: selected ? 3.5 : 2.5,
                     ),
-                  ],
+                    boxShadow: [
+                      BoxShadow(
+                        color: KidColors.darken(color),
+                        offset: Offset(0, selected ? 4 : 3),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -396,7 +414,7 @@ class _ImagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final src =
-        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
     final dst = Rect.fromLTWH(0, 0, size.width, size.height);
     canvas.drawImageRect(
         image, src, dst, Paint()..filterQuality = FilterQuality.low);
@@ -407,49 +425,62 @@ class _ImagePainter extends CustomPainter {
       oldDelegate.image != image;
 }
 
-/// Small round icon button reused for back / undo / redo / reset actions.
-class _RoundIconButton extends StatelessWidget {
+/// Round 3D button reused for back / undo / redo / reset actions.
+class _RoundIconButton extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
   final bool enabled;
-  final Color? color;
+  final Color color;
 
   const _RoundIconButton({
     required this.icon,
     required this.onTap,
+    required this.color,
     this.enabled = true,
-    this.color,
   });
 
   @override
+  State<_RoundIconButton> createState() => _RoundIconButtonState();
+}
+
+class _RoundIconButtonState extends State<_RoundIconButton> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.35,
-      child: Material(
-        color: Colors.white,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled ? onTap : null,
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: color ?? _ColoringCanvasScreenState.primaryBlue,
-            ),
+    const depth = 4.0;
+    final on = widget.enabled;
+    final color = on ? widget.color : Colors.grey.shade300;
+    final offset = (_down && on) ? 1.0 : depth;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: on ? (_) => setState(() => _down = true) : null,
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: on ? widget.onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: depth),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color,
+            border:
+            Border.all(color: Colors.white.withOpacity(0.6), width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: on ? KidColors.darken(color) : Colors.grey.shade400,
+                offset: Offset(0, offset),
+                blurRadius: 0,
+              ),
+            ],
           ),
+          child: Icon(widget.icon,
+              color: on ? Colors.white : Colors.grey.shade500, size: 24),
         ),
       ),
     );

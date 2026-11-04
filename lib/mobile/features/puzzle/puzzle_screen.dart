@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ui/kid_ui.dart';
 import '../../data/providers/progress_provider.dart';
 import '../science/fun_common.dart';
 import 'puzzle_game.dart';
+
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
 
 /// Puzzle picker: pick a theme, then a level. English / Français / العربية.
 class PuzzleScreen extends StatefulWidget {
@@ -16,8 +25,6 @@ class PuzzleScreen extends StatefulWidget {
 class _PuzzleScreenState extends State<PuzzleScreen> with FunLang<PuzzleScreen> {
   static const Color primaryBlue = Color(0xFF0F92CA);
   static const Color primaryBlueDark = Color(0xFF0B6E9B);
-  static const Color textDark = Color(0xFF213238);
-  static const Color textMuted = Color(0xFF7C8C93);
 
   /// Solved "themeId|levelId" combos (ids, not translated labels, so the
   /// ✓ badges stay correct when the language changes).
@@ -92,13 +99,14 @@ class _PuzzleScreenState extends State<PuzzleScreen> with FunLang<PuzzleScreen> 
     return Directionality(
       textDirection: dir,
       child: Scaffold(
+        backgroundColor: KidColors.cream,
         body: Stack(
           children: [
             Positioned.fill(
               child: Image.asset(
                 'assets/images/splash_background.png',
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: Colors.white),
+                errorBuilder: (_, __, ___) => Container(color: KidColors.cream),
               ),
             ),
             Positioned.fill(
@@ -108,11 +116,11 @@ class _PuzzleScreenState extends State<PuzzleScreen> with FunLang<PuzzleScreen> 
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withOpacity(0.55),
-                      Colors.white.withOpacity(0.85),
-                      Colors.white.withOpacity(0.97),
+                      KidColors.cream.withOpacity(0.6),
+                      KidColors.cream.withOpacity(0.9),
+                      KidColors.cream.withOpacity(0.98),
                     ],
-                    stops: const [0.0, 0.35, 0.65],
+                    stops: const [0.0, 0.3, 0.6],
                   ),
                 ),
               ),
@@ -121,43 +129,13 @@ class _PuzzleScreenState extends State<PuzzleScreen> with FunLang<PuzzleScreen> 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: Row(
-                      children: [
-                        FunRoundButton(
-                          icon: Icons.arrow_back_rounded,
-                          tooltip: tr('back'),
-                          onTap: () => Navigator.of(context).maybePop(),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${tr('pz_title')} 🧩',
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
-                                  color: textDark,
-                                ),
-                              ),
-                              Text(
-                                tr('pz_sub'),
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  KidHeader(
+                    title: tr('pz_title'),
+                    emoji: '🧩',
+                    subtitle: tr('pz_sub'),
                   ),
                   const Padding(
-                    padding: EdgeInsets.fromLTRB(20, 10, 20, 0),
+                    padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
                     child: LabLangBar(),
                   ),
                   Padding(
@@ -170,14 +148,14 @@ class _PuzzleScreenState extends State<PuzzleScreen> with FunLang<PuzzleScreen> 
                   ),
                   Expanded(
                     child: GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
                       itemCount: _themes.length,
                       gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         mainAxisSpacing: 14,
                         crossAxisSpacing: 14,
-                        childAspectRatio: 0.95,
+                        childAspectRatio: 0.92,
                       ),
                       itemBuilder: (context, index) {
                         final theme = _themes[index];
@@ -222,7 +200,9 @@ class _PuzzleLevel {
   const _PuzzleLevel(this.id, this.gridSize, this.badge);
 }
 
-class _ThemeCard extends StatelessWidget {
+// -------------------------------------------------------------- theme card
+
+class _ThemeCard extends StatefulWidget {
   final _PuzzleTheme theme;
   final int index;
   final int solvedCount;
@@ -238,86 +218,131 @@ class _ThemeCard extends StatelessWidget {
   });
 
   @override
+  State<_ThemeCard> createState() => _ThemeCardState();
+}
+
+class _ThemeCardState extends State<_ThemeCard> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
-    final allDone = solvedCount == totalLevels;
-    return FunPressable(
-      onTap: onTap,
-      pressedScale: 0.94,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: LinearGradient(
-            colors: theme.colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: theme.colors.last.withOpacity(0.32),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+    const depth = 7.0;
+    final theme = widget.theme;
+    final solvedCount = widget.solvedCount;
+    final allDone = solvedCount == widget.totalLevels;
+    final offset = _down ? 2.0 : depth;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: depth),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            gradient: LinearGradient(
+              colors: theme.colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: FunBounce(
-                amplitude: 7,
-                seconds: 1.8,
-                phase: (index * 0.14) % 1.0,
-                child: Text(theme.emoji, style: const TextStyle(fontSize: 46)),
+            border:
+            Border.all(color: Colors.white.withOpacity(0.55), width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: KidColors.darken(theme.colors.last),
+                offset: Offset(0, offset),
+                blurRadius: 0,
               ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 14,
-              child: Text(
-                ft('th_${theme.id}'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
+            ],
+          ),
+          child: Stack(
+            children: [
+              Align(
+                alignment: const Alignment(0, -0.25),
+                child: Container(
+                  width: 84,
+                  height: 84,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.28),
+                    border: Border.all(
+                        color: Colors.white.withOpacity(0.7), width: 3),
+                  ),
+                  child: FunBounce(
+                    amplitude: 6,
+                    seconds: 1.8,
+                    phase: (widget.index * 0.14) % 1.0,
+                    child:
+                    Text(theme.emoji, style: const TextStyle(fontSize: 44)),
+                  ),
                 ),
               ),
-            ),
-            if (solvedCount > 0)
-              PositionedDirectional(
-                top: 10,
-                end: 10,
-                child: TweenAnimationBuilder<double>(
-                  key: ValueKey<int>(solvedCount),
-                  tween: Tween<double>(begin: 0.3, end: 1.0),
-                  duration: const Duration(milliseconds: 700),
-                  curve: Curves.elasticOut,
-                  builder: (context, s, child) =>
-                      Transform.scale(scale: s, child: child),
-                  child: Container(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: allDone ? const Color(0xFFFFF3B0) : Colors.white,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      allDone ? '🏆 $solvedCount/$totalLevels' : '✓ $solvedCount/$totalLevels',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colors.last,
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 14,
+                child: Text(
+                  ft('th_${theme.id}'),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _fredoka(
+                      size: 17, color: Colors.white, weight: FontWeight.w800),
+                ),
+              ),
+              if (solvedCount > 0)
+                PositionedDirectional(
+                  top: 10,
+                  end: 10,
+                  child: TweenAnimationBuilder<double>(
+                    key: ValueKey<int>(solvedCount),
+                    tween: Tween<double>(begin: 0.3, end: 1.0),
+                    duration: const Duration(milliseconds: 700),
+                    curve: Curves.elasticOut,
+                    builder: (context, s, child) =>
+                        Transform.scale(scale: s, child: child),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color:
+                        allDone ? const Color(0xFFFFF3B0) : Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            offset: const Offset(0, 2),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        allDone
+                            ? '🏆 $solvedCount/${widget.totalLevels}'
+                            : '✓ $solvedCount/${widget.totalLevels}',
+                        style: _fredoka(
+                            size: 12,
+                            color: theme.colors.last,
+                            weight: FontWeight.w800),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+// -------------------------------------------------------------- level sheet
 
 /// Bottom sheet shown when a theme is tapped: choose Easy / Medium / Hard.
 class _LevelSheet extends StatelessWidget {
@@ -333,15 +358,28 @@ class _LevelSheet extends StatelessWidget {
     required this.onLevelChosen,
   });
 
+  Color _levelColor(String id) {
+    switch (id) {
+      case 'easy':
+        return const Color(0xFF35B24A);
+      case 'medium':
+        return const Color(0xFFFFB300);
+      default:
+        return const Color(0xFFFF6B5E);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final accent = theme.colors.last;
     return Directionality(
       textDirection: LabI18n.instance.direction,
       child: Container(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        decoration: BoxDecoration(
+          color: KidColors.cream,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
+          border: Border(top: BorderSide(color: accent, width: 5)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -349,10 +387,10 @@ class _LevelSheet extends StatelessWidget {
           children: [
             Center(
               child: Container(
-                width: 44,
-                height: 5,
+                width: 48,
+                height: 6,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: accent.withOpacity(0.35),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -360,96 +398,176 @@ class _LevelSheet extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                FunBounce(
-                  amplitude: 5,
-                  child: Text(theme.emoji, style: const TextStyle(fontSize: 30)),
+                Container(
+                  width: 54,
+                  height: 54,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: theme.colors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                        color: Colors.white.withOpacity(0.7), width: 3),
+                  ),
+                  child: FunBounce(
+                    amplitude: 4,
+                    child:
+                    Text(theme.emoji, style: const TextStyle(fontSize: 28)),
+                  ),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  '${ft('th_${theme.id}')} · ${ft('pz_level')}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: _PuzzleScreenState.textDark,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${ft('th_${theme.id}')} · ${ft('pz_level')}',
+                        style: _fredoka(size: 20, weight: FontWeight.w800),
+                      ),
+                      Text(
+                        ft('pz_pieces_q'),
+                        style: _fredoka(
+                            size: 13,
+                            color: KidColors.textMuted,
+                            weight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              ft('pz_pieces_q'),
-              style: const TextStyle(
-                fontSize: 13,
-                color: _PuzzleScreenState.textMuted,
-              ),
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             for (var i = 0; i < levels.length; i++)
               FunPopIn(
                 delayMs: 80 * i,
-                child: _levelRow(levels[i]),
+                child: _LevelRow(
+                  level: levels[i],
+                  color: _levelColor(levels[i].id),
+                  isDone: completed.contains('${theme.id}|${levels[i].id}'),
+                  onTap: () {
+                    LabSfx.tap();
+                    onLevelChosen(levels[i]);
+                  },
+                ),
               ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _levelRow(_PuzzleLevel level) {
+class _LevelRow extends StatefulWidget {
+  final _PuzzleLevel level;
+  final Color color;
+  final bool isDone;
+  final VoidCallback onTap;
+
+  const _LevelRow({
+    required this.level,
+    required this.color,
+    required this.isDone,
+    required this.onTap,
+  });
+
+  @override
+  State<_LevelRow> createState() => _LevelRowState();
+}
+
+class _LevelRowState extends State<_LevelRow> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const depth = 5.0;
+    final level = widget.level;
+    final color = widget.color;
     final pieces = level.gridSize * level.gridSize;
-    final isDone = completed.contains('${theme.id}|${level.id}');
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: FunPressable(
-        onTap: () {
-          LabSfx.tap();
-          onLevelChosen(level);
-        },
-        pressedScale: 0.97,
-        child: Container(
+    final offset = _down ? 2.0 : depth;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10 + depth - 5),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF4F7F8),
-            borderRadius: BorderRadius.circular(16),
+            color: widget.isDone ? KidColors.lighten(color, 0.5) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isDone
-                  ? const Color(0xFF35B24A).withOpacity(0.5)
-                  : Colors.transparent,
-              width: 2,
-            ),
+                color: color.withOpacity(widget.isDone ? 0.9 : 0.45),
+                width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.5),
+                offset: Offset(0, offset),
+                blurRadius: 0,
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Text(level.badge, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 10),
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: KidColors.lighten(color, 0.5),
+                ),
+                child: Text(level.badge, style: const TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       ft('lv_${level.id}'),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14.5,
-                        color: _PuzzleScreenState.textDark,
-                      ),
+                      style: _fredoka(size: 17, weight: FontWeight.w800),
                     ),
                     Text(
                       '${level.gridSize} x ${level.gridSize} — ${ft('pz_pieces', {'n': '$pieces'})}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: _PuzzleScreenState.textMuted,
-                      ),
+                      style: _fredoka(
+                          size: 12.5,
+                          color: KidColors.textMuted,
+                          weight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
-              if (isDone)
-                const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF35B24A), size: 22)
-              else
-                const Icon(Icons.chevron_right_rounded,
-                    color: _PuzzleScreenState.textMuted, size: 22),
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.isDone ? const Color(0xFF35B24A) : color,
+                  boxShadow: [
+                    BoxShadow(
+                      color: KidColors.darken(
+                          widget.isDone ? const Color(0xFF35B24A) : color),
+                      offset: const Offset(0, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  widget.isDone
+                      ? Icons.check_rounded
+                      : Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
             ],
           ),
         ),
