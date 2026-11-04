@@ -1,13 +1,21 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ui/kid_ui.dart';
 import '../../data/models/music/music.dart';
 import '../../data/providers/progress_provider.dart';
 
-/// Music activity screen. Tap any song to play it; a small mini-player
-/// pinned at the bottom shows progress and lets the child skip to the
-/// next/previous song without leaving the list.
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
+
+/// Music activity screen. Tap any song to play it; a mini-player pinned at
+/// the bottom shows progress and lets the child skip songs.
 class MusicScreen extends StatefulWidget {
   const MusicScreen({super.key});
 
@@ -23,13 +31,8 @@ class _MusicScreenState extends State<MusicScreen> {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 
-  /// Songs the child already heard this session (each unique song counts
-  /// exactly once toward the daily music challenge).
+  /// Each unique song counts once toward the daily music challenge.
   final Set<String> _playedSongTitles = {};
-
-  static const Color textDark = Color(0xFF213238);
-  static const Color textMuted = Color(0xFF7C8C93);
-  static const Color bgColor = Color(0xFFF7FAFC);
 
   @override
   void initState() {
@@ -65,8 +68,6 @@ class _MusicScreenState extends State<MusicScreen> {
     await _player.stop();
     await _player.play(AssetSource('audios/${song.file}'));
 
-    // Feed the learning-progress system: each song heard today counts
-    // once toward the music challenge (latest play wins the tally).
     if (!_playedSongTitles.contains(song.title)) {
       _playedSongTitles.add(song.title);
       final progress = Provider.of<ProgressProvider>(context, listen: false);
@@ -89,23 +90,20 @@ class _MusicScreenState extends State<MusicScreen> {
 
   void _playNext() {
     if (_currentIndex == null) return;
-    final next = (_currentIndex! + 1) % songs.length;
-    _playSong(next);
+    _playSong((_currentIndex! + 1) % songs.length);
   }
 
   void _playPrevious() {
     if (_currentIndex == null) return;
-    final prev = (_currentIndex! - 1 + songs.length) % songs.length;
-    _playSong(prev);
+    _playSong((_currentIndex! - 1 + songs.length) % songs.length);
   }
 
   Future<void> _seek(double value) async {
-    final newPosition = Duration(milliseconds: value.toInt());
-    await _player.seek(newPosition);
+    await _player.seek(Duration(milliseconds: value.toInt()));
   }
 
   String _formatDuration(Duration d) {
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(1, '0');
+    final minutes = d.inMinutes.remainder(60).toString();
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
   }
@@ -121,80 +119,60 @@ class _MusicScreenState extends State<MusicScreen> {
     final bool hasCurrent = _currentIndex != null;
 
     return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // --- Top bar ---------------------------------------------------
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: textDark, size: 18),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      '🎵 Music Time',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: textDark,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+      body: KidBackground(
+        colors: const [Color(0xFFD5F5DF), KidColors.cream],
+        child: SafeArea(
+          child: Column(
+            children: [
+              const KidHeader(
+                title: 'Music Time',
+                emoji: '🎵',
+                subtitle: 'Tap a song to play it',
               ),
-            ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+                  itemCount: songs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final song = songs[index];
+                    final isCurrent = _currentIndex == index;
+                    final colors = song.colors.map((c) => Color(c)).toList();
 
-            // --- Song list ---------------------------------------------------
-            Expanded(
-              child: ListView.separated(
-                padding: EdgeInsets.fromLTRB(20, 16, 20, hasCurrent ? 120 : 24),
-                itemCount: songs.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final song = songs[index];
-                  final bool isCurrent = _currentIndex == index;
-                  final bool isPlayingThis = isCurrent && _isPlaying;
-                  final colors = song.colors.map((c) => Color(c)).toList();
-
-                  return _SongTile(
-                    song: song,
-                    colors: colors,
-                    isCurrent: isCurrent,
-                    isPlaying: isPlayingThis,
-                    onTap: () =>
-                        isCurrent ? _togglePlayPause() : _playSong(index),
-                  );
-                },
+                    return _SongTile(
+                      song: song,
+                      colors: colors,
+                      isCurrent: isCurrent,
+                      isPlaying: isCurrent && _isPlaying,
+                      onTap: () =>
+                      isCurrent ? _togglePlayPause() : _playSong(index),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+              if (hasCurrent)
+                _MiniPlayer(
+                  song: songs[_currentIndex!],
+                  isPlaying: _isPlaying,
+                  position: _position,
+                  duration: _duration,
+                  onPlayPause: _togglePlayPause,
+                  onNext: _playNext,
+                  onPrevious: _playPrevious,
+                  onSeek: _seek,
+                  formatDuration: _formatDuration,
+                ),
+            ],
+          ),
         ),
       ),
-      bottomNavigationBar: hasCurrent
-          ? _MiniPlayer(
-              song: songs[_currentIndex!],
-              isPlaying: _isPlaying,
-              position: _position,
-              duration: _duration,
-              onPlayPause: _togglePlayPause,
-              onNext: _playNext,
-              onPrevious: _playPrevious,
-              onSeek: _seek,
-              formatDuration: _formatDuration,
-            )
-          : null,
     );
   }
 }
 
-class _SongTile extends StatelessWidget {
+// ------------------------------------------------------------- song tile
+
+class _SongTile extends StatefulWidget {
   final Song song;
   final List<Color> colors;
   final bool isCurrent;
@@ -210,46 +188,67 @@ class _SongTile extends StatelessWidget {
   });
 
   @override
+  State<_SongTile> createState() => _SongTileState();
+}
+
+class _SongTileState extends State<_SongTile> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isCurrent ? colors.first.withOpacity(0.12) : Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Container(
+    const depth = 6.0;
+    final accent = widget.colors.last;
+    final offset = _down ? 2.0 : depth;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: depth),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            color: widget.isCurrent
+                ? KidColors.lighten(accent, 0.38)
+                : Colors.white,
+            borderRadius: BorderRadius.circular(26),
             border: Border.all(
-              color: isCurrent
-                  ? colors.last.withOpacity(0.4)
-                  : const Color(0xFFEFF2F4),
-              width: 1.2,
+              color: accent.withOpacity(widget.isCurrent ? 0.9 : 0.35),
+              width: 3,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withOpacity(0.55),
+                offset: Offset(0, offset),
+                blurRadius: 0,
+              ),
+            ],
           ),
           child: Row(
             children: [
               Container(
-                width: 54,
-                height: 54,
+                width: 58,
+                height: 58,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: colors,
+                    colors: widget.colors.length > 1
+                        ? widget.colors
+                        : [widget.colors.first, widget.colors.first],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.last.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  border: Border.all(
+                      color: Colors.white.withOpacity(0.7), width: 3),
                 ),
-                alignment: Alignment.center,
-                child: Text(song.emoji, style: const TextStyle(fontSize: 24)),
+                child: Text(widget.song.emoji,
+                    style: const TextStyle(fontSize: 26)),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -257,23 +256,20 @@ class _SongTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      song.title,
+                      widget.song.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: _MusicScreenState.textDark,
-                      ),
+                      style: _fredoka(size: 17, weight: FontWeight.w800),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
-                      song.subtitle,
+                      widget.song.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: _MusicScreenState.textMuted,
+                      style: _fredoka(
+                        size: 13,
+                        color: KidColors.textMuted,
+                        weight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -281,16 +277,25 @@ class _SongTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                width: 42,
-                height: 42,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: colors.last,
+                  color: accent,
+                  boxShadow: [
+                    BoxShadow(
+                      color: KidColors.darken(accent),
+                      offset: const Offset(0, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Icon(
-                  isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  widget.isPlaying
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
                   color: Colors.white,
-                  size: 22,
+                  size: 28,
                 ),
               ),
             ],
@@ -301,8 +306,8 @@ class _SongTile extends StatelessWidget {
   }
 }
 
-/// Compact player pinned at the bottom of the screen while a song is
-/// loaded, with a scrub bar and next/previous controls.
+// ------------------------------------------------------------ mini player
+
 class _MiniPlayer extends StatelessWidget {
   final Song song;
   final bool isPlaying;
@@ -329,107 +334,81 @@ class _MiniPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = song.colors.map((c) => Color(c)).toList();
+    final accent = colors.last;
     final double maxMs =
-        duration.inMilliseconds > 0 ? duration.inMilliseconds.toDouble() : 1;
+    duration.inMilliseconds > 0 ? duration.inMilliseconds.toDouble() : 1;
     final double posMs =
-        position.inMilliseconds.clamp(0, maxMs.toInt()).toDouble();
+    position.inMilliseconds.clamp(0, maxMs.toInt()).toDouble();
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 18,
-            offset: const Offset(0, -6),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      child: KidCard(
+        accent: accent,
+        radius: 30,
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SliderTheme(
               data: SliderTheme.of(context).copyWith(
-                trackHeight: 4,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                activeTrackColor: colors.last,
-                inactiveTrackColor: colors.last.withOpacity(0.15),
-                thumbColor: colors.last,
+                trackHeight: 10,
+                trackShape: const RoundedRectSliderTrackShape(),
+                thumbShape:
+                const RoundSliderThumbShape(enabledThumbRadius: 10),
+                overlayShape:
+                const RoundSliderOverlayShape(overlayRadius: 18),
+                activeTrackColor: accent,
+                inactiveTrackColor: accent.withOpacity(0.2),
+                thumbColor: Colors.white,
               ),
-              child: Slider(
-                value: posMs,
-                max: maxMs,
-                onChanged: onSeek,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 0, bottom: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(formatDuration(position),
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9AA6AB))),
-                  Text(formatDuration(duration),
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9AA6AB))),
-                ],
-              ),
+              child: Slider(value: posMs, max: maxMs, onChanged: onSeek),
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(colors: colors),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(song.emoji, style: const TextStyle(fontSize: 20)),
-                ),
-                const SizedBox(width: 12),
+                Text(formatDuration(position),
+                    style: _fredoka(
+                        size: 12,
+                        color: KidColors.textMuted,
+                        weight: FontWeight.w600)),
+                Text(formatDuration(duration),
+                    style: _fredoka(
+                        size: 12,
+                        color: KidColors.textMuted,
+                        weight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(song.emoji, style: const TextStyle(fontSize: 30)),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     song.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF213238),
-                    ),
+                    style: _fredoka(size: 16, weight: FontWeight.w800),
                   ),
                 ),
-                IconButton(
-                  onPressed: onPrevious,
-                  icon: const Icon(Icons.skip_previous_rounded,
-                      color: Color(0xFF213238)),
+                KidRoundButton(
+                  icon: Icons.skip_previous_rounded,
+                  color: accent,
+                  onTap: onPrevious,
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.last,
-                  ),
-                  child: IconButton(
-                    onPressed: onPlayPause,
-                    icon: Icon(
-                      isPlaying
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
-                      color: Colors.white,
-                    ),
-                  ),
+                const SizedBox(width: 8),
+                KidRoundButton(
+                  icon: isPlaying
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
+                  color: KidColors.green,
+                  onTap: onPlayPause,
                 ),
-                IconButton(
-                  onPressed: onNext,
-                  icon: const Icon(Icons.skip_next_rounded,
-                      color: Color(0xFF213238)),
+                const SizedBox(width: 8),
+                KidRoundButton(
+                  icon: Icons.skip_next_rounded,
+                  color: accent,
+                  onTap: onNext,
                 ),
               ],
             ),

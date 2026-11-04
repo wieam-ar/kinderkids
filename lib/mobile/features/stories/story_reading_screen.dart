@@ -3,8 +3,19 @@ import 'dart:math';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ui/app_ui.dart' show showAppSnack;
+import '../../core/ui/kid_ui.dart'
+    show
+    KidBackground,
+    KidButton,
+    KidCard,
+    KidColors,
+    KidHeader,
+    KidProgressBar,
+    KidRoundButton;
 import '../../data/providers/progress_provider.dart';
 import '../science/fun_common.dart';
 import 'story.dart';
@@ -12,10 +23,48 @@ import 'story_i18n.dart';
 
 enum _ReadState { idle, playing, paused }
 
+// ---------------------------------------------------------------------------
+// Fonts: Fredoka (kid-friendly) for Latin, Noto Naskh for Arabic (Fredoka has
+// no Arabic glyphs, and Naskh renders the tashkeel/harakat cleanly).
+// ---------------------------------------------------------------------------
+
+TextStyle _font(
+    bool rtl, {
+      double size = 15,
+      Color color = KidColors.textDark,
+      FontWeight weight = FontWeight.w600,
+      double? height,
+      double? letterSpacing,
+    }) {
+  if (rtl) {
+    return GoogleFonts.notoNaskhArabic(
+      fontSize: size,
+      color: color,
+      fontWeight: weight,
+      height: height,
+    );
+  }
+  return GoogleFonts.fredoka(
+    fontSize: size,
+    color: color,
+    fontWeight: weight,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+}
+
+/// A sentence list + the indexes of sentences that end a paragraph
+/// (used to add a longer, natural pause between paragraphs).
+class _Flat {
+  final List<String> sentences;
+  final Set<int> paraEnds;
+  const _Flat(this.sentences, this.paraEnds);
+}
+
 /// Reading screen for the "Story" activity.
 ///  - 3 languages (English / Français / العربية), stories included
-///  - "Read to me": the phone reads the story aloud, sentence by sentence,
-///    and the sentence being read lights up. Tap any sentence to hear it.
+///  - "Read to me": sentence-by-sentence read-aloud with highlight.
+///    Tap any sentence to hear it.
 ///  - Finishing a story (listening or marking it) gives stars + confetti.
 class StoryReadingScreen extends StatefulWidget {
   final int initialIndex;
@@ -33,20 +82,17 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
   PageController(initialPage: _currentIndex);
   final Set<int> _readIds = {};
 
-  // Gentle up/down bob for the illustration + glow of the play button.
   late final AnimationController _bobController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1600),
   )..repeat(reverse: true);
 
-  // Little celebration burst shown briefly when a story is marked read.
   late final AnimationController _celebrateController = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 900),
   );
 
   static const Color primaryPurple = Color(0xFF7B61FF);
-  static const Color bgColor = Color(0xFFF7F5FC);
 
   static const Map<String, List<Color>> _themeColors = {
     'Animals': [Color(0xFFFFC98B), Color(0xFFF2994A)],
@@ -92,16 +138,29 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
 
   String _emojiFor(String theme) => _themeEmoji[theme] ?? '📖';
 
+  // ---- Text size (readability) ---------------------------------------------
+
+  static const List<double> _textScales = [0.9, 1.0, 1.2, 1.4];
+  int _sizeIdx = 1;
+  double get _textScale => _textScales[_sizeIdx];
+
+  void _cycleTextSize() {
+    LabSfx.play('pop', volume: 0.6);
+    LabSfx.tap();
+    setState(() => _sizeIdx = (_sizeIdx + 1) % _textScales.length);
+  }
+
   // ---- Read aloud ----------------------------------------------------------
 
   final FlutterTts _tts = FlutterTts();
   bool _ttsReady = false;
   int _session = 0; // changes to cancel a running read-aloud loop
   _ReadState _rs = _ReadState.idle;
-  int _active = -1; // index of the sentence being read (-1 = none / title)
+  int _active = -1; // index of the sentence being read (-1 = title / none)
   bool _slow = true; // slow reading is better for small kids
 
   final Map<String, List<List<String>>> _cache = {};
+  final Map<String, Map<String, String>?> _voiceByLocale = {};
 
   List<List<String>> _paragraphsOf(Story s) {
     final lang = i18n.lang.name;
@@ -111,16 +170,88 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
     );
   }
 
+  _Flat _flatten(Story s) {
+    final sentences = <String>[];
+    final ends = <int>{};
+    for (final p in _paragraphsOf(s)) {
+      sentences.addAll(p);
+      ends.add(sentences.length - 1);
+    }
+    return _Flat(sentences, ends);
+  }
+
   double get _rate {
-    final base = _slow ? 0.32 : 0.45;
+    final base = _slow ? 0.34 : 0.46;
     return i18n.lang == LabLang.ar ? base - 0.03 : base;
+  }
+
+  /// Cleans a sentence before it is sent to the voice engine: quotes, guillemets,
+  /// ellipsis and dashes are read badly (or spelled out) by several engines.
+  String _speakable(String s) {
+    return s
+        .replaceAll('\u00A0', ' ')
+        .replaceAll('\u202F', ' ')
+        .replaceAll('\u2019', "'")
+        .replaceAll(RegExp('[«»\u201C\u201D"]'), '')
+        .replaceAll('\u2026', ', ')
+        .replaceAll(RegExp(r'\s*[\u2014\u2013]\s*'), ', ')
+        .replaceAll('\u0640', '') // arabic tatweel
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  /// Picks the best installed voice for [locale] (premium / enhanced / neural
+  /// first, exact region first, robotic "compact" voices last).
+  Future<Map<String, String>?> _findBestVoice(String locale) async {
+    final raw = await _tts.getVoices;
+    if (raw is! List) return null;
+    final want = locale.replaceAll('_', '-').toLowerCase();
+    final lang = want.split('-').first;
+
+    Map<String, String>? best;
+    var bestScore = -1000;
+    for (final v in raw) {
+      if (v is! Map) continue;
+      final name = '${v['name'] ?? ''}';
+      final loc = '${v['locale'] ?? ''}';
+      final locN = loc.replaceAll('_', '-').toLowerCase();
+      if (name.isEmpty || !locN.startsWith(lang)) continue;
+
+      final n = name.toLowerCase();
+      var score = 0;
+      if (locN == want) score += 100;
+      if (n.contains('premium')) {
+        score += 60;
+      } else if (n.contains('enhanced')) {
+        score += 50;
+      }
+      if (n.contains('neural') || n.contains('wavenet')) score += 45;
+      if (n.contains('network')) score += 30;
+      if (n.contains('compact') || n.contains('espeak')) score -= 40;
+
+      if (score > bestScore) {
+        bestScore = score;
+        best = {'name': name, 'locale': loc};
+      }
+    }
+    return best;
+  }
+
+  Future<void> _applyBestVoice(String locale) async {
+    try {
+      if (!_voiceByLocale.containsKey(locale)) {
+        _voiceByLocale[locale] = await _findBestVoice(locale);
+      }
+      final v = _voiceByLocale[locale];
+      if (v != null) await _tts.setVoice(v);
+    } catch (_) {}
   }
 
   Future<bool> _prepareTts() async {
     try {
       if (!_ttsReady) {
         await _tts.awaitSpeakCompletion(true);
-        await _tts.setPitch(1.1);
+        await _tts.setPitch(1.05);
         await _tts.setVolume(1.0);
         _ttsReady = true;
       }
@@ -133,6 +264,7 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
         }
       } catch (_) {}
       await _tts.setLanguage(locale);
+      await _applyBestVoice(locale);
       await _tts.setSpeechRate(_rate);
       return true;
     } catch (_) {
@@ -140,40 +272,61 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
     }
   }
 
-  Future<void> _startReading({int from = 0}) async {
+  Future<void> _startReading({int from = 0, bool withTitle = true}) async {
     final story = stories[_currentIndex];
-    final sentences = _paragraphsOf(story).expand((p) => p).toList();
-    if (sentences.isEmpty) return;
+    final flat = _flatten(story);
+    if (flat.sentences.isEmpty) return;
 
     final session = ++_session;
     LabSfx.stopSpeech();
+    try {
+      await _tts.stop();
+    } catch (_) {}
     if (!await _prepareTts()) return;
     if (!mounted || session != _session) return;
 
+    final readTitle = withTitle && from == 0;
     setState(() {
       _rs = _ReadState.playing;
-      _active = from == 0 ? -1 : from;
+      _active = readTitle ? -1 : from;
     });
 
     final lang = i18n.lang.name;
     try {
-      if (from == 0) {
-        await _tts.speak(story.titleFor(lang)); // the title first
+      if (readTitle) {
+        await _tts.speak(_speakable(story.titleFor(lang)));
+        if (!mounted || session != _session) return;
+        await Future.delayed(const Duration(milliseconds: 450));
         if (!mounted || session != _session) return;
       }
-      for (var i = from; i < sentences.length; i++) {
+      for (var i = from; i < flat.sentences.length; i++) {
         if (!mounted || session != _session) return;
         setState(() => _active = i);
+
+        final text = _speakable(flat.sentences[i]);
+        if (text.isEmpty) continue;
+
         try {
           await _tts.setSpeechRate(_rate);
         } catch (_) {}
         final sw = Stopwatch()..start();
-        await _tts.speak(sentences[i]);
+        await _tts.speak(text);
+        if (!mounted || session != _session) return;
+
         // If the engine returned at once (no voice?), keep a natural pace.
-        if (mounted && session == _session && sw.elapsedMilliseconds < 250) {
+        if (sw.elapsedMilliseconds < 250) {
           await Future.delayed(
-            Duration(milliseconds: (sentences[i].length * 55).clamp(600, 6000)),
+            Duration(milliseconds: (text.length * 55).clamp(600, 6000)),
           );
+          if (!mounted || session != _session) return;
+        }
+
+        // Natural breathing pause: longer between paragraphs.
+        if (i < flat.sentences.length - 1) {
+          final ms = flat.paraEnds.contains(i)
+              ? (_slow ? 750 : 480)
+              : (_slow ? 240 : 130);
+          await Future.delayed(Duration(milliseconds: ms));
         }
       }
     } catch (_) {}
@@ -208,7 +361,7 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
     if (_rs == _ReadState.playing) {
       _pause();
     } else if (_rs == _ReadState.paused) {
-      _startReading(from: _active < 0 ? 0 : _active);
+      _startReading(from: _active < 0 ? 0 : _active, withTitle: _active < 0);
     } else {
       _startReading();
     }
@@ -234,12 +387,10 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
     _celebrateController.forward(from: 0);
     LabSfx.play('win', volume: 0.8);
     LabSfx.hard();
-    // Feed the learning-progress system: star reward + one story
-    // challenge step for each story the child reads.
     final progress = Provider.of<ProgressProvider>(context, listen: false);
     progress.addStars(2);
     progress.incrementChallengeProgress('story');
-    _toast(st('st_cheer${Random().nextInt(5)}'), cheer: true);
+    _toast(st('st_cheer${Random().nextInt(5)}'));
   }
 
   void _toggleRead(int id) {
@@ -251,23 +402,9 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
     }
   }
 
-  void _toast(String message, {bool cheer = false}) {
+  void _toast(String message) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        duration: Duration(milliseconds: cheer ? 1300 : 2200),
-        backgroundColor: primaryPurple,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-        ),
-      ),
-    );
+    showAppSnack(ScaffoldMessenger.of(context), message);
   }
 
   void _goTo(int index) {
@@ -311,8 +448,11 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
   Widget build(BuildContext context) {
     final story = stories[_currentIndex];
     final isRead = _readIds.contains(story.id);
+    final rtl = dir == TextDirection.rtl;
+    final themeColors = _colorsFor(story.theme);
+    final playing = _rs == _ReadState.playing;
 
-    final playLabel = _rs == _ReadState.playing
+    final playLabel = playing
         ? st('st_pause')
         : _rs == _ReadState.paused
         ? st('st_resume')
@@ -321,161 +461,163 @@ class _StoryReadingScreenState extends State<StoryReadingScreen>
     return Directionality(
       textDirection: dir,
       child: Scaffold(
-        backgroundColor: bgColor,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  // --- Top bar ----------------------------------------------
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                    child: Row(
-                      children: [
-                        FunRoundButton(
-                          icon: Icons.arrow_back_ios_new_rounded,
-                          color: const Color(0xFF213238),
-                          size: 40,
-                          tooltip: tr('back'),
-                          onTap: () => Navigator.of(context).pop(),
+        body: KidBackground(
+          colors: [
+            Color.lerp(themeColors.first, Colors.white, 0.62)!,
+            KidColors.cream,
+          ],
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    KidHeader(
+                      title: st('st_title'),
+                      emoji: '📖',
+                      subtitle: '${_currentIndex + 1} / ${stories.length}',
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: LabLangBar(),
+                    ),
+
+                    // --- Pages ------------------------------------------------
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _controller,
+                        itemCount: stories.length,
+                        onPageChanged: (i) {
+                          _stopReading();
+                          setState(() => _currentIndex = i);
+                        },
+                        itemBuilder: (context, index) {
+                          final s = stories[index];
+                          final current = index == _currentIndex;
+                          return _StoryPage(
+                            key: ValueKey<String>('${s.id}-${i18n.lang.name}'),
+                            title: s.titleFor(i18n.lang.name),
+                            paragraphs: _paragraphsOf(s),
+                            themeLabel: storyThemeLabel(s.theme),
+                            colors: _colorsFor(s.theme),
+                            icon: _iconFor(s.theme),
+                            emoji: _emojiFor(s.theme),
+                            isRead: _readIds.contains(s.id),
+                            bobController: _bobController,
+                            speaking: current && playing,
+                            titleActive: current && playing && _active == -1,
+                            activeSentence: current ? _active : -1,
+                            textScale: _textScale,
+                            onTapSentence: (i) {
+                              if (current) {
+                                _startReading(from: i, withTitle: false);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+
+                    // --- Bottom controls -------------------------------------
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(28),
                         ),
-                        Expanded(
-                          child: Text(
-                            '📖 ${st('st_title')}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF213238),
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryPurple.withOpacity(0.14),
+                            blurRadius: 18,
+                            offset: const Offset(0, -4),
                           ),
-                        ),
-                        const SizedBox(width: 40),
-                      ],
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-                    child: LabLangBar(),
-                  ),
-
-                  // --- Pages --------------------------------------------------
-                  Expanded(
-                    child: PageView.builder(
-                      controller: _controller,
-                      itemCount: stories.length,
-                      onPageChanged: (i) {
-                        _stopReading();
-                        setState(() => _currentIndex = i);
-                      },
-                      itemBuilder: (context, index) {
-                        final s = stories[index];
-                        final current = index == _currentIndex;
-                        return _StoryPage(
-                          key: ValueKey<String>('${s.id}-${i18n.lang.name}'),
-                          title: s.titleFor(i18n.lang.name),
-                          paragraphs: _paragraphsOf(s),
-                          themeLabel: storyThemeLabel(s.theme),
-                          colors: _colorsFor(s.theme),
-                          icon: _iconFor(s.theme),
-                          emoji: _emojiFor(s.theme),
-                          isRead: _readIds.contains(s.id),
-                          bobController: _bobController,
-                          speaking: current && _rs == _ReadState.playing,
-                          activeSentence: current ? _active : -1,
-                          onTapSentence: (i) {
-                            if (current) _startReading(from: i);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  // --- Bottom controls ----------------------------------------
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 6, 24, 12),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(top: 14),
-                              child: _BouncyIconButton(
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              KidRoundButton(
                                 icon: Icons.arrow_back_rounded,
-                                background: const Color(0xFFFFE1C2),
-                                iconColor: const Color(0xFFE0964A),
+                                color: KidColors.orange,
+                                tooltip: 'Previous',
                                 onTap: () => _goTo(_currentIndex - 1),
                               ),
-                            ),
-                            _PlayButton(
-                              playing: _rs == _ReadState.playing,
-                              pulse: _bobController,
-                              label: playLabel,
-                              onTap: _onPlayTap,
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 14),
-                              child: _BouncyIconButton(
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: KidButton(
+                                  label: playLabel,
+                                  icon: playing
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
+                                  color: playing
+                                      ? KidColors.orange
+                                      : KidColors.purple,
+                                  expand: true,
+                                  onPressed: _onPlayTap,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              KidRoundButton(
                                 icon: Icons.arrow_forward_rounded,
-                                background: primaryPurple.withOpacity(0.15),
-                                iconColor: primaryPurple,
+                                color: KidColors.purple,
+                                tooltip: 'Next',
                                 onTap: () => _goTo(_currentIndex + 1),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _PillChip(
-                              label: _slow
-                                  ? '🐢 ${st('st_slow')}'
-                                  : '🐇 ${st('st_normal')}',
-                              active: false,
-                              onTap: () {
-                                LabSfx.play('pop', volume: 0.6);
-                                LabSfx.tap();
-                                setState(() => _slow = !_slow);
-                              },
-                            ),
-                            const SizedBox(width: 10),
-                            _PillChip(
-                              label: isRead
-                                  ? '✅ ${st('st_read_done')}'
-                                  : '⭐ ${st('st_read_btn')}',
-                              active: isRead,
-                              onTap: () => _toggleRead(story.id),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${_currentIndex + 1} / ${stories.length} 🐾',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF9AA6AB),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              _PillChip(
+                                rtl: rtl,
+                                label: _slow
+                                    ? '🐢 ${st('st_slow')}'
+                                    : '🐇 ${st('st_normal')}',
+                                active: false,
+                                onTap: () {
+                                  LabSfx.play('pop', volume: 0.6);
+                                  LabSfx.tap();
+                                  setState(() => _slow = !_slow);
+                                },
+                              ),
+                              _PillChip(
+                                rtl: rtl,
+                                label: '🔠 ${(_textScale * 100).round()}%',
+                                active: false,
+                                onTap: _cycleTextSize,
+                              ),
+                              _PillChip(
+                                rtl: rtl,
+                                label: isRead
+                                    ? '✅ ${st('st_read_done')}'
+                                    : '⭐ ${st('st_read_btn')}',
+                                active: isRead,
+                                onTap: () => _toggleRead(story.id),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                // --- Celebration burst overlay --------------------------------
+                IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _celebrateController,
+                    builder: (context, _) => _CelebrationBurst(
+                      progress: _celebrateController.value,
                     ),
                   ),
-                ],
-              ),
-
-              // --- Celebration burst overlay ----------------------------------
-              IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _celebrateController,
-                  builder: (context, _) => _CelebrationBurst(
-                    progress: _celebrateController.value,
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -497,7 +639,9 @@ class _StoryPage extends StatefulWidget {
   final bool isRead;
   final AnimationController bobController;
   final bool speaking;
+  final bool titleActive;
   final int activeSentence; // flat index, -1 = none
+  final double textScale;
   final ValueChanged<int> onTapSentence;
 
   const _StoryPage({
@@ -511,7 +655,9 @@ class _StoryPage extends StatefulWidget {
     required this.isRead,
     required this.bobController,
     required this.speaking,
+    required this.titleActive,
     required this.activeSentence,
+    required this.textScale,
     required this.onTapSentence,
   });
 
@@ -539,8 +685,7 @@ class _StoryPageState extends State<_StoryPage> {
     }
     _taps.clear();
     for (var i = 0; i < _sentenceCount; i++) {
-      _taps.add(TapGestureRecognizer()
-        ..onTap = () => widget.onTapSentence(i));
+      _taps.add(TapGestureRecognizer()..onTap = () => widget.onTapSentence(i));
     }
     _paraKeys = List.generate(widget.paragraphs.length, (_) => GlobalKey());
   }
@@ -590,12 +735,18 @@ class _StoryPageState extends State<_StoryPage> {
   @override
   Widget build(BuildContext context) {
     final rtl = Directionality.of(context) == TextDirection.rtl;
-    final dark = labDarken(widget.colors.last, 0.12);
+    final accent = widget.colors.last;
+    final dark = labDarken(accent, 0.12);
+    final scale = widget.textScale;
 
-    final baseStyle = TextStyle(
-      fontSize: rtl ? 19 : 17.5,
-      height: rtl ? 2.0 : 1.8,
-      color: const Color(0xFF4A5A60),
+    // NOTE: the active sentence must NOT change font weight/size, otherwise the
+    // text re-wraps on every sentence and the page "jumps" while reading.
+    final baseStyle = _font(
+      rtl,
+      size: (rtl ? 22 : 19) * scale,
+      height: rtl ? 2.0 : 1.75,
+      weight: FontWeight.w500,
+      letterSpacing: rtl ? null : 0.2,
     );
 
     var flat = 0;
@@ -611,9 +762,8 @@ class _StoryPageState extends State<_StoryPage> {
           recognizer: _taps[idx],
           style: active
               ? TextStyle(
-            backgroundColor: widget.colors.last.withOpacity(0.2),
+            backgroundColor: accent.withOpacity(0.22),
             color: dark,
-            fontWeight: FontWeight.w800,
           )
               : null,
         ));
@@ -631,54 +781,96 @@ class _StoryPageState extends State<_StoryPage> {
       );
     }
 
+    // Reading progress (sentence being read / total).
+    final total = _sentenceCount;
+    final double progress = widget.activeSentence >= 0 && total > 0
+        ? ((widget.activeSentence + 1) / total).clamp(0.0, 1.0).toDouble()
+        : (widget.isRead ? 1.0 : 0.0);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FunPopIn(child: _buildCard()),
-          const SizedBox(height: 20),
+          FunPopIn(child: _buildHero()),
+          const SizedBox(height: 16),
+
+          // --- Title (lights up while it is being read) ----------------------
           FunPopIn(
             delayMs: 100,
-            child: Text(
-              widget.title,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF213238),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: widget.titleActive
+                    ? accent.withOpacity(0.22)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                widget.title,
+                style: _font(
+                  rtl,
+                  size: (rtl ? 30 : 26),
+                  weight: FontWeight.w800,
+                  height: rtl ? 1.6 : 1.25,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.touch_app_rounded,
-                  size: 14, color: widget.colors.last.withOpacity(0.8)),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  st('st_tap_hint'),
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: widget.colors.last.withOpacity(0.8),
+          const SizedBox(height: 10),
+
+          // --- Progress -------------------------------------------------------
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: KidProgressBar(value: progress, height: 10, color: accent),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Icon(Icons.touch_app_rounded,
+                    size: 15, color: accent.withOpacity(0.9)),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    st('st_tap_hint'),
+                    style: _font(
+                      rtl,
+                      size: rtl ? 13 : 12,
+                      weight: FontWeight.w500,
+                      color: accent.withOpacity(0.9),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          ...paragraphWidgets,
+
+          // --- The "book page" -------------------------------------------------
+          KidCard(
+            accent: accent,
+            radius: 28,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: paragraphWidgets,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCard() {
+  Widget _buildHero() {
     final colors = widget.colors;
     final bob = widget.bobController;
+    final rtl = Directionality.of(context) == TextDirection.rtl;
     return Container(
-      height: 200,
+      height: 176,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
@@ -690,236 +882,167 @@ class _StoryPageState extends State<_StoryPage> {
         boxShadow: [
           BoxShadow(
             color: colors.last.withOpacity(0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          PositionedDirectional(
-            top: -20,
-            end: -20,
-            child: Icon(widget.icon,
-                size: 140, color: Colors.white.withOpacity(0.18)),
-          ),
-          PositionedDirectional(
-            top: 40,
-            start: 30,
-            child: _Twinkle(controller: bob, emoji: '✨'),
-          ),
-          PositionedDirectional(
-            bottom: 24,
-            end: 40,
-            child: _Twinkle(controller: bob, emoji: '⭐', reversed: true),
-          ),
-          Center(
-            child: AnimatedBuilder(
-              animation: bob,
-              builder: (context, child) {
-                final double dy = -6 * sin(bob.value * pi * 2);
-                final double rot = 0.03 * sin(bob.value * pi * 2);
-                // The mascot "talks" (pulses) while the story is read.
-                final double pulse =
-                widget.speaking ? 1 + 0.07 * sin(bob.value * pi * 4) : 1.0;
-                return Transform.translate(
-                  offset: Offset(0, dy),
-                  child: Transform.rotate(
-                    angle: rot,
-                    child: Transform.scale(scale: pulse, child: child),
-                  ),
-                );
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(widget.icon, size: 74, color: Colors.white),
-                  Text(widget.emoji, style: const TextStyle(fontSize: 30)),
-                ],
-              ),
-            ),
-          ),
-          PositionedDirectional(
-            top: 14,
-            start: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${widget.emoji} ${widget.themeLabel}',
-                style: const TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          if (widget.isRead)
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
             PositionedDirectional(
-              bottom: 14,
-              start: 14,
-              child: Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
+              top: -20,
+              end: -20,
+              child: Icon(widget.icon,
+                  size: 140, color: Colors.white.withOpacity(0.18)),
+            ),
+            PositionedDirectional(
+              top: 44,
+              start: 30,
+              child: _Twinkle(controller: bob, emoji: '✨'),
+            ),
+            PositionedDirectional(
+              bottom: 24,
+              end: 40,
+              child: _Twinkle(controller: bob, emoji: '⭐', reversed: true),
+            ),
+            Center(
+              child: AnimatedBuilder(
+                animation: bob,
+                builder: (context, child) {
+                  final double dy = -6 * sin(bob.value * pi * 2);
+                  final double rot = 0.03 * sin(bob.value * pi * 2);
+                  // The mascot "talks" (pulses) while the story is read.
+                  final double pulse = widget.speaking
+                      ? 1 + 0.07 * sin(bob.value * pi * 4)
+                      : 1.0;
+                  return Transform.translate(
+                    offset: Offset(0, dy),
+                    child: Transform.rotate(
+                      angle: rot,
+                      child: Transform.scale(scale: pulse, child: child),
+                    ),
+                  );
+                },
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🎉', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 4),
-                    Text(
-                      st('st_read_done'),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF213238),
-                      ),
-                    ),
+                    Icon(widget.icon, size: 70, color: Colors.white),
+                    Text(widget.emoji, style: const TextStyle(fontSize: 30)),
                   ],
                 ),
               ),
             ),
-          if (widget.speaking)
             PositionedDirectional(
               top: 14,
-              end: 14,
-              child: AnimatedBuilder(
-                animation: bob,
-                builder: (context, child) => Opacity(
-                  opacity: 0.6 + 0.4 * sin(bob.value * pi * 2).abs(),
-                  child: child,
+              start: 14,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.28),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text('🔊', style: TextStyle(fontSize: 22)),
+                child: Text(
+                  '${widget.emoji} ${widget.themeLabel}',
+                  style: _font(
+                    rtl,
+                    size: 12.5,
+                    weight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
-        ],
+            if (widget.isRead)
+              PositionedDirectional(
+                bottom: 14,
+                start: 14,
+                child: Container(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.92),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🎉', style: TextStyle(fontSize: 13)),
+                      const SizedBox(width: 4),
+                      Text(
+                        st('st_read_done'),
+                        style: _font(
+                          rtl,
+                          size: 12,
+                          weight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            if (widget.speaking)
+              PositionedDirectional(
+                top: 14,
+                end: 14,
+                child: AnimatedBuilder(
+                  animation: bob,
+                  builder: (context, child) => Opacity(
+                    opacity: 0.6 + 0.4 * sin(bob.value * pi * 2).abs(),
+                    child: child,
+                  ),
+                  child: const Text('🔊', style: TextStyle(fontSize: 22)),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Controls
+// Small widgets
 // ---------------------------------------------------------------------------
-
-/// Big "Read to me" button that glows while the story is being read.
-class _PlayButton extends StatelessWidget {
-  final bool playing;
-  final Animation<double> pulse;
-  final String label;
-  final VoidCallback onTap;
-
-  const _PlayButton({
-    required this.playing,
-    required this.pulse,
-    required this.label,
-    required this.onTap,
-  });
-
-  static const Color purple = Color(0xFF7B61FF);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedBuilder(
-          animation: pulse,
-          builder: (context, child) {
-            final glow =
-            playing ? 6 + 8 * (0.5 + 0.5 * sin(pulse.value * pi * 2)) : 0.0;
-            return Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: purple.withOpacity(0.38),
-                    blurRadius: 14 + glow,
-                    spreadRadius: glow / 2,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: child,
-            );
-          },
-          child: FunPressable(
-            onTap: onTap,
-            pressedScale: 0.9,
-            child: Container(
-              width: 78,
-              height: 78,
-              decoration: const BoxDecoration(
-                color: purple,
-                shape: BoxShape.circle,
-              ),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                transitionBuilder: (child, anim) =>
-                    ScaleTransition(scale: anim, child: child),
-                child: Icon(
-                  playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                  key: ValueKey<bool>(playing),
-                  color: Colors.white,
-                  size: 44,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w800,
-            color: purple,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _PillChip extends StatelessWidget {
   final String label;
   final bool active;
+  final bool rtl;
   final VoidCallback onTap;
 
   const _PillChip({
     required this.label,
     required this.active,
+    required this.rtl,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     const purple = Color(0xFF7B61FF);
+    const green = Color(0xFF35B24A);
     return FunPressable(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF35B24A) : Colors.white,
+          color: active ? green : Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: active ? const Color(0xFF35B24A) : const Color(0xFFE1DAF5),
+            color: active ? green : const Color(0xFFE1DAF5),
             width: 2,
           ),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
+          style: _font(
+            rtl,
+            size: 13,
+            weight: FontWeight.w700,
             color: active ? Colors.white : purple,
           ),
         ),
@@ -955,35 +1078,6 @@ class _Twinkle extends StatelessWidget {
         );
       },
       child: Text(emoji, style: const TextStyle(fontSize: 20)),
-    );
-  }
-}
-
-/// Bouncy button: scales down slightly on press for a playful tactile feel.
-class _BouncyIconButton extends StatelessWidget {
-  final IconData icon;
-  final Color background;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const _BouncyIconButton({
-    required this.icon,
-    required this.background,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FunPressable(
-      onTap: onTap,
-      pressedScale: 0.86,
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(color: background, shape: BoxShape.circle),
-        child: Icon(icon, color: iconColor, size: 22),
-      ),
     );
   }
 }

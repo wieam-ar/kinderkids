@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/ui/app_ui.dart';
+import '../../core/ui/app_ui.dart' show showAppSnack;
+import '../../core/ui/kid_ui.dart';
 import '../../core/ui/parent_gate.dart';
 import '../../data/providers/progress_provider.dart';
 import '../adventure/learning_adventure_screen.dart';
@@ -11,6 +13,13 @@ import '../creative/creative_studio_screen.dart';
 import '../dashboard/home_screen.dart';
 import '../explore/explore_world_screen.dart';
 import '../shop/reward_shop_screen.dart';
+
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -32,11 +41,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   ];
 
   static const List<_NavDestination> _destinations = [
-    _NavDestination(Icons.home_rounded, 'Home'),
-    _NavDestination(Icons.map_rounded, 'Adventure'),
-    _NavDestination(Icons.palette_rounded, 'Create'),
-    _NavDestination(Icons.explore_rounded, 'Explore'),
-    _NavDestination(Icons.store_rounded, 'Shop'),
+    _NavDestination(Icons.home_rounded, 'Home', KidColors.blue),
+    _NavDestination(Icons.map_rounded, 'Adventure', Color(0xFFF2994A)),
+    _NavDestination(Icons.palette_rounded, 'Create', Color(0xFFFF7BA9)),
+    _NavDestination(Icons.explore_rounded, 'Explore', Color(0xFF2FBF8F)),
+    _NavDestination(Icons.store_rounded, 'Shop', KidColors.purple),
   ];
 
   int _currentIndex = 0;
@@ -102,12 +111,24 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: AppShadows.soft(0.1),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          border: Border(
+            top: BorderSide(
+              color: KidColors.purple.withOpacity(0.18),
+              width: 3,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: KidColors.purple.withOpacity(0.12),
+              blurRadius: 18,
+              offset: const Offset(0, -4),
+            ),
+          ],
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
             child: Row(
               children: [
                 for (var i = 0; i < _destinations.length; i++)
@@ -152,43 +173,38 @@ class _TimeUpDialog extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        backgroundColor: Colors.transparent,
+        child: KidCard(
+          accent: KidColors.purple,
+          radius: 32,
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🌙', style: TextStyle(fontSize: 60)),
-              const SizedBox(height: 12),
-              const Text(
+              const Text('🌙', style: TextStyle(fontSize: 64)),
+              const SizedBox(height: 8),
+              Text(
                 'Time for a break!',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 21,
-                  color: AppColors.textDark,
-                ),
+                style: _fredoka(size: 26, weight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'You played a lot today! Your eyes and body need a rest. '
                     'See you tomorrow! 💤',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13.5, color: AppColors.textMuted),
+                style: _fredoka(
+                  size: 15,
+                  color: KidColors.textMuted,
+                  weight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: const StadiumBorder(),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () => _requestExtraTime(context),
-                  icon: const Icon(Icons.key_rounded, size: 18),
-                  label: const Text('Parent: add 15 minutes'),
-                ),
+              KidButton(
+                label: 'Parent: add 15 minutes',
+                icon: Icons.key_rounded,
+                color: KidColors.purple,
+                expand: true,
+                onPressed: () => _requestExtraTime(context),
               ),
             ],
           ),
@@ -201,8 +217,9 @@ class _TimeUpDialog extends StatelessWidget {
 class _NavDestination {
   final IconData icon;
   final String label;
+  final Color color;
 
-  const _NavDestination(this.icon, this.label);
+  const _NavDestination(this.icon, this.label, this.color);
 }
 
 class _NavItem extends StatelessWidget {
@@ -220,69 +237,91 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? AppColors.primary : Colors.grey.shade500;
+    final color = destination.color;
+    final fg = isSelected ? Colors.white : KidColors.textMuted;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AnimatedScale(
-                  scale: isSelected ? 1.15 : 1,
-                  duration: const Duration(milliseconds: 220),
-                  child: Icon(destination.icon, color: color, size: 24),
-                ),
-                if (badge != null)
-                  Positioned(
-                    top: -6,
-                    right: -22,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.star,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        badge!,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutBack,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          transform: Matrix4.translationValues(0, isSelected ? -4 : 0, 0),
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [KidColors.lighten(color, 0.08), color],
+            )
+                : null,
+            borderRadius: BorderRadius.circular(22),
+            border: isSelected
+                ? Border.all(color: Colors.white.withOpacity(0.6), width: 3)
+                : null,
+            boxShadow: isSelected
+                ? [
+              BoxShadow(
+                color: KidColors.darken(color),
+                offset: const Offset(0, 5),
+                blurRadius: 0,
+              ),
+            ]
+                : null,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedScale(
+                    scale: isSelected ? 1.15 : 1,
+                    duration: const Duration(milliseconds: 220),
+                    child: Icon(destination.icon, color: fg, size: 26),
+                  ),
+                  if (badge != null)
+                    Positioned(
+                      top: -8,
+                      right: -26,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB82E),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                        child: Text(
+                          badge!,
+                          style: _fredoka(
+                            size: 10,
+                            color: Colors.white,
+                            weight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              destination.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: color,
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 3),
+              Text(
+                destination.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _fredoka(
+                  size: 11.5,
+                  color: fg,
+                  weight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

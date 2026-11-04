@@ -1,8 +1,18 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ui/kid_ui.dart';
 import '../../data/providers/progress_provider.dart';
+
+TextStyle _fredoka({
+  double size = 15,
+  Color color = KidColors.textDark,
+  FontWeight weight = FontWeight.w700,
+}) =>
+    GoogleFonts.fredoka(fontSize: size, fontWeight: weight, color: color);
 
 class MathExerciseScreen extends StatefulWidget {
   final int totalQuestions;
@@ -13,19 +23,12 @@ class MathExerciseScreen extends StatefulWidget {
 }
 
 class _Palette {
-  static const String backgroundAsset = 'assets/images/splash_background.png';
-
-  static const Color sand = Color(0xFFFBF1DC);
-  static const Color jungleDeep = Color(0xFF1F5D4C);
-  static const Color textDark = Color(0xFF213238);
-  static const Color textMuted = Color(0xFF7C8C93);
-
-  static const Color addition = Color(0xFF4CAF7D); // leaf green
-  static const Color subtraction = Color(0xFFF2994A); // sunset orange
-  static const Color missing = Color(0xFFE0507B); // berry pink
-  static const Color counting = Color(0xFF4FB6E8); // river blue
-  static const Color multiply = Color(0xFF8B5CF6); // plum purple
-  static const Color order = Color(0xFFD9A441); // dune gold
+  static const Color addition = Color(0xFF4CAF7D);
+  static const Color subtraction = Color(0xFFF2994A);
+  static const Color missing = Color(0xFFE0507B);
+  static const Color counting = Color(0xFF3AAAE0);
+  static const Color multiply = Color(0xFF8B5CF6);
+  static const Color order = Color(0xFFE0A800);
 
   static const Color correct = Color(0xFF4CAF7D);
   static const Color wrong = Color(0xFFFF6B5E);
@@ -68,13 +71,6 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   ];
   final List<String> _emojiPool = ['🍌', '🍎', '🍊', '🐘', '🦋', '🐢', '⭐'];
 
-  // NOTE: these were previously declared `late` and only assigned inside
-  // initState(). That pattern breaks if a State object survives a hot
-  // reload from before this field existed (or before initState ran),
-  // throwing LateInitializationError on the next build(). Giving them
-  // safe default values up front makes the screen resilient to that,
-  // with zero behavior change in normal (non-hot-reload) use, since
-  // initState() still overwrites them immediately on first build.
   List<bool?> _trail = [];
   int _index = 0;
   _Question? _question;
@@ -118,11 +114,10 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     int guard = 0;
     while (options.length < 6 && guard < 50) {
       guard++;
-      final offset = _rng.nextInt(9) - 4; // -4..4
+      final offset = _rng.nextInt(9) - 4;
       final candidate = correct + offset;
       if (candidate >= min && candidate != correct) options.add(candidate);
     }
-    // fallback fill, in case the range was too tight
     int extra = correct + min + 1;
     while (options.length < 6) {
       if (extra != correct && extra >= min) options.add(extra);
@@ -133,14 +128,13 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   Widget _equationText(String text, {Color? color}) => Text(
-        text,
-        style: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.5,
-          color: color ?? _Palette.textDark,
-        ),
-      );
+    text,
+    style: _fredoka(
+      size: 40,
+      weight: FontWeight.w800,
+      color: color ?? KidColors.textDark,
+    ),
+  );
 
   _Question _addition() {
     final a = _rng.nextInt(9) + 1;
@@ -158,8 +152,8 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   _Question _subtraction() {
-    final a = _rng.nextInt(9) + 2; // 2..10
-    final b = _rng.nextInt(a); // 0..a-1
+    final a = _rng.nextInt(9) + 2;
+    final b = _rng.nextInt(a);
     final answer = a - b;
     return _Question(
       type: _QType.subtraction,
@@ -173,8 +167,8 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   _Question _missingNumber() {
-    final a = _rng.nextInt(7) + 1; // 1..7
-    final missing = _rng.nextInt(7) + 1; // 1..7
+    final a = _rng.nextInt(7) + 1;
+    final missing = _rng.nextInt(7) + 1;
     final c = a + missing;
     return _Question(
       type: _QType.missing,
@@ -188,7 +182,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   _Question _counting() {
-    final count = _rng.nextInt(8) + 2; // 2..9
+    final count = _rng.nextInt(8) + 2;
     final emoji = _emojiPool[_rng.nextInt(_emojiPool.length)];
     return _Question(
       type: _QType.counting,
@@ -198,7 +192,7 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
         runSpacing: 6,
         children: List.generate(
           count,
-          (i) => Text(emoji, style: const TextStyle(fontSize: 28)),
+              (i) => Text(emoji, style: const TextStyle(fontSize: 30)),
         ),
       ),
       answer: count,
@@ -210,8 +204,8 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   _Question _multiply() {
-    final a = _rng.nextInt(4) + 2; // 2..5
-    final b = _rng.nextInt(4) + 2; // 2..5
+    final a = _rng.nextInt(4) + 2;
+    final b = _rng.nextInt(4) + 2;
     final answer = a * b;
     return _Question(
       type: _QType.multiply,
@@ -225,21 +219,17 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
   }
 
   _Question _order() {
-    final n = _rng.nextInt(9) + 1; // 1..9
+    final n = _rng.nextInt(9) + 1;
     final after = _rng.nextBool();
     final answer = after ? n + 1 : n - 1;
     final prompt =
-        after ? 'What number comes after $n' : 'What number comes before $n';
+    after ? 'What number comes after $n' : 'What number comes before $n';
     return _Question(
       type: _QType.order,
       promptBuilder: (_) => Text(
         '$prompt?',
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-          color: _Palette.textDark,
-        ),
+        style: _fredoka(size: 26, weight: FontWeight.w800),
       ),
       answer: answer,
       options: _distractors(answer, min: 0),
@@ -264,8 +254,6 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
     });
 
     if (isCorrect) {
-      // Feed the learning-progress system: one star + one challenge step
-      // for every correct math answer.
       final progress = Provider.of<ProgressProvider>(context, listen: false);
       progress.addStars(1);
       progress.incrementChallengeProgress('math');
@@ -300,105 +288,68 @@ class _MathExerciseScreenState extends State<MathExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Defensive fallback: normally initState() has already set _question
-    // by the time build() runs. This only triggers in the rare hot-reload
-    // edge case where a State object survives a reload without initState
-    // re-running (e.g. this screen was already mounted before you reloaded).
     if (_question == null) {
       return const Scaffold(
-        backgroundColor: _Palette.sand,
         body: Center(child: CircularProgressIndicator()),
       );
     }
     final question = _question!;
 
     return Scaffold(
-      // Fallback color shows for an instant before the image decodes,
-      // and along any edge the image doesn't quite cover.
-      backgroundColor: _Palette.sand,
-      body: Stack(
-        children: [
-          // 1) Full-bleed illustrated savanna scene.
-          Positioned.fill(
-            child: Image.asset(
-              _Palette.backgroundAsset,
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
-          ),
-          // 2) Soft "sky haze" wash so the busier art doesn't fight with
-          // text, cards, and the stepping-stone trail sitting on top.
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.white.withOpacity(0.55),
-                    Colors.white.withOpacity(0.30),
-                    _Palette.sand.withOpacity(0.55),
-                  ],
-                  stops: const [0.0, 0.45, 1.0],
-                ),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _RoundIconButton(
-                        icon: Icons.arrow_back_ios_new_rounded,
-                        onTap: () => Navigator.of(context).pop(),
+      body: KidBackground(
+        colors: const [Color(0xFFE6DBFF), KidColors.cream],
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    KidRoundButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      color: KidColors.purple,
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
+                    const Spacer(),
+                    if (!_finished)
+                      _SkillBadge(
+                        label: question.badgeLabel,
+                        icon: question.badgeIcon,
+                        color: question.accent,
                       ),
-                      const Spacer(),
-                      if (!_finished)
-                        _SkillBadge(
-                          label: question.badgeLabel,
-                          icon: question.badgeIcon,
-                          color: question.accent,
-                        ),
-                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _StoneTrail(
+                    trail: _trail, current: _index, finished: _finished),
+                Expanded(
+                  child: _finished
+                      ? _ResultView(
+                    score: _score,
+                    total: widget.totalQuestions,
+                    onRestart: _restart,
+                    onExit: () => Navigator.of(context).pop(),
+                  )
+                      : _QuestionCard(
+                    question: question,
+                    selected: _selected,
+                    locked: _locked,
+                    onTap: _onOptionTap,
+                    mascotPhrase: _mascotPhrase,
                   ),
-                  const SizedBox(height: 16),
-                  _StoneTrail(
-                      trail: _trail, current: _index, finished: _finished),
-                  Expanded(
-                    child: _finished
-                        ? _ResultView(
-                            score: _score,
-                            total: widget.totalQuestions,
-                            onRestart: _restart,
-                            onExit: () => Navigator.of(context).pop(),
-                          )
-                        : _QuestionCard(
-                            question: question,
-                            selected: _selected,
-                            locked: _locked,
-                            onTap: _onOptionTap,
-                            mascotPhrase: _mascotPhrase,
-                          ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Stepping-stone progress trail — the app's signature element for this
-/// screen. Each stone is one question: hollow while pending, green when
-/// answered correctly, coral when missed, and the current stone sits
-/// slightly larger with a lion "footprint" beneath it.
+// ---------------------------------------------------------- progress trail
+
 class _StoneTrail extends StatelessWidget {
   final List<bool?> trail;
   final int current;
@@ -410,7 +361,7 @@ class _StoneTrail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 34,
+      height: 30,
       child: Row(
         children: List.generate(trail.length, (i) {
           final result = trail[i];
@@ -420,42 +371,40 @@ class _StoneTrail extends StatelessWidget {
           if (result == true) {
             fill = _Palette.correct;
             child =
-                const Icon(Icons.check_rounded, size: 14, color: Colors.white);
+            const Icon(Icons.check_rounded, size: 16, color: Colors.white);
           } else if (result == false) {
             fill = _Palette.wrong;
             child =
-                const Icon(Icons.close_rounded, size: 14, color: Colors.white);
+            const Icon(Icons.close_rounded, size: 16, color: Colors.white);
           } else {
-            // Slightly opaque (rather than pure white) so pending stones
-            // stay visible against the busier photographic-style backdrop.
-            fill = Colors.white.withOpacity(0.85);
+            fill = isCurrent
+                ? KidColors.purple.withOpacity(0.35)
+                : Colors.white.withOpacity(0.9);
           }
           return Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                height: isCurrent ? 14 : 10,
-                decoration: BoxDecoration(
-                  color: fill,
-                  borderRadius: BorderRadius.circular(20),
-                  border: result == null
-                      ? Border.all(
-                          color: _Palette.jungleDeep.withOpacity(0.25),
-                          width: 1.4)
-                      : null,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isCurrent ? 0.18 : 0.08),
-                      blurRadius: isCurrent ? 6 : 3,
-                      offset: const Offset(0, 2),
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: isCurrent ? 22 : 16,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: result == null
+                          ? KidColors.purple.withOpacity(0.4)
+                          : Colors.white.withOpacity(0.7),
+                      width: 2,
                     ),
-                  ],
+                  ),
+                  alignment: Alignment.center,
+                  child: child == null
+                      ? null
+                      : FittedBox(
+                      child: Padding(
+                          padding: const EdgeInsets.all(1), child: child)),
                 ),
-                alignment: Alignment.center,
-                child: child == null
-                    ? null
-                    : SizedBox(height: 10, child: FittedBox(child: child)),
               ),
             ),
           );
@@ -476,36 +425,26 @@ class _SkillBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        // Bumped from a flat tint to solid white + a colored tint layer
-        // so the badge stays crisp over the illustrated background.
-        color: Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: color.withOpacity(0.35), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: color.withOpacity(0.55), width: 2),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 18, color: KidColors.darken(color, 0.12)),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-                fontSize: 12.5, fontWeight: FontWeight.w800, color: color),
-          ),
+          Text(label,
+              style: _fredoka(size: 14, color: KidColors.darken(color, 0.12))),
         ],
       ),
     );
   }
 }
+
+// ---------------------------------------------------------- question card
 
 class _QuestionCard extends StatelessWidget {
   final _Question question;
@@ -526,83 +465,64 @@ class _QuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 14),
-        // Lion companion + speech bubble reacting to the last answer.
+        const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (child, anim) => ScaleTransition(
+                scale:
+                CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+                child: FadeTransition(opacity: anim, child: child),
               ),
-              child: Text(
-                mascotPhrase,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: _Palette.textDark,
+              child: Container(
+                key: ValueKey(mascotPhrase),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: question.accent.withOpacity(0.5), width: 2),
                 ),
+                child: Text(mascotPhrase, style: _fredoka(size: 14)),
               ),
             ),
             const SizedBox(width: 8),
-            const Text('🦁', style: TextStyle(fontSize: 34)),
+            const Text('🦁', style: TextStyle(fontSize: 36)),
           ],
         ),
-        const SizedBox(height: 22),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.97),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-                color: question.accent.withOpacity(0.35), width: 1.6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-            ],
+        const SizedBox(height: 16),
+        KidCard(
+          accent: question.accent,
+          radius: 32,
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 12),
+          child: SizedBox(
+            width: double.infinity,
+            child: Center(child: question.promptBuilder(context)),
           ),
-          child: Center(child: question.promptBuilder(context)),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Expanded(
           child: GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
             itemCount: question.options.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 14,
               childAspectRatio: 1.9,
             ),
             itemBuilder: (context, index) {
               final value = question.options[index];
-              // Small alternating tilt on each stone for a hand-placed,
-              // non-grid feel — the one deliberate aesthetic risk here.
-              final double tilt = (index.isEven ? -1 : 1) * (2.5 + (index % 3));
-              return Transform.rotate(
-                angle: tilt * pi / 180,
-                child: _AnswerStone(
-                  value: value,
-                  isSelected: selected == value,
-                  isCorrect: value == question.answer,
-                  revealed: locked,
-                  accent: question.accent,
-                  onTap: () => onTap(value),
-                ),
+              return _AnswerTile(
+                value: value,
+                isSelected: selected == value,
+                isCorrect: value == question.answer,
+                revealed: locked,
+                accent: question.accent,
+                onTap: () => onTap(value),
               );
             },
           ),
@@ -612,7 +532,7 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
-class _AnswerStone extends StatelessWidget {
+class _AnswerTile extends StatefulWidget {
   final int value;
   final bool isSelected;
   final bool isCorrect;
@@ -620,7 +540,7 @@ class _AnswerStone extends StatelessWidget {
   final Color accent;
   final VoidCallback onTap;
 
-  const _AnswerStone({
+  const _AnswerTile({
     required this.value,
     required this.isSelected,
     required this.isCorrect,
@@ -630,45 +550,67 @@ class _AnswerStone extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    Color bg = Colors.white;
-    Color fg = _Palette.textDark;
-    Color border = accent.withOpacity(0.25);
+  State<_AnswerTile> createState() => _AnswerTileState();
+}
 
-    if (revealed && isSelected) {
-      bg = isCorrect ? _Palette.correct : _Palette.wrong;
-      fg = Colors.white;
-      border = Colors.transparent;
-    } else if (revealed && isCorrect) {
-      bg = _Palette.correct.withOpacity(0.14);
-      fg = _Palette.correct;
-      border = _Palette.correct.withOpacity(0.4);
+class _AnswerTileState extends State<_AnswerTile> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const depth = 6.0;
+
+    Color color = widget.accent;
+    if (widget.revealed && widget.isSelected) {
+      color = widget.isCorrect ? _Palette.correct : _Palette.wrong;
+    } else if (widget.revealed && widget.isCorrect) {
+      color = _Palette.correct;
+    } else if (widget.revealed) {
+      color = widget.accent.withOpacity(0.45);
     }
 
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(22),
-      elevation: 3,
-      shadowColor: Colors.black.withOpacity(0.12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: border, width: 1.6),
-          ),
+    final offset = _down ? 2.0 : depth;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: depth),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          transform: Matrix4.translationValues(0, depth - offset, 0),
           alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [KidColors.lighten(color, 0.08), color],
+            ),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: Colors.white.withOpacity(0.6), width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: KidColors.darken(color),
+                offset: Offset(0, offset),
+                blurRadius: 0,
+              ),
+            ],
+          ),
           child: Text(
-            '$value',
-            style:
-                TextStyle(fontSize: 23, fontWeight: FontWeight.w900, color: fg),
+            '${widget.value}',
+            style: _fredoka(
+                size: 30, color: Colors.white, weight: FontWeight.w800),
           ),
         ),
       ),
     );
   }
 }
+
+// ----------------------------------------------------------------- result
 
 class _ResultView extends StatelessWidget {
   final int score;
@@ -687,85 +629,43 @@ class _ResultView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool great = score >= (total * 0.7);
     return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.94),
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+      child: KidCard(
+        accent: KidColors.purple,
+        radius: 32,
+        padding: const EdgeInsets.fromLTRB(26, 28, 26, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(great ? '🏆' : '🦁', style: const TextStyle(fontSize: 60)),
-            const SizedBox(height: 14),
-            Text(
-              great ? 'Awesome job!' : 'Nice effort!',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: _Palette.textDark,
-              ),
-            ),
+            Text(great ? '🏆' : '🦁', style: const TextStyle(fontSize: 64)),
+            const SizedBox(height: 8),
+            Text(great ? 'Awesome job!' : 'Nice effort!',
+                style: _fredoka(size: 26, weight: FontWeight.w800)),
             const SizedBox(height: 6),
             Text(
               'You got $score out of $total right',
-              style: TextStyle(
-                  fontSize: 14,
-                  color: _Palette.textMuted,
-                  fontWeight: FontWeight.w600),
+              style: _fredoka(
+                  size: 15,
+                  color: KidColors.textMuted,
+                  weight: FontWeight.w600),
             ),
-            const SizedBox(height: 26),
-            ElevatedButton(
+            const SizedBox(height: 22),
+            KidButton(
+              label: 'Play Again',
+              icon: Icons.replay_rounded,
+              color: KidColors.purple,
+              expand: true,
               onPressed: onRestart,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _Palette.jungleDeep,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 34, vertical: 14),
-                shape: const StadiumBorder(),
-                elevation: 0,
-              ),
-              child: const Text('Play Again',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
             ),
-            const SizedBox(height: 10),
-            TextButton(
+            const SizedBox(height: 14),
+            KidButton(
+              label: 'Back to Activities',
+              icon: Icons.check_rounded,
+              color: KidColors.green,
+              expand: true,
               onPressed: onExit,
-              child: Text(
-                'Back to Activities',
-                style: TextStyle(
-                    color: _Palette.textMuted, fontWeight: FontWeight.w700),
-              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _RoundIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _RoundIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(icon, color: _Palette.textDark, size: 18),
       ),
     );
   }
